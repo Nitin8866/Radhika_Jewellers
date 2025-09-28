@@ -492,11 +492,19 @@ export const getCustomerUdharSummary = async (req, res) => {
       if (udhar.udharType === 'GIVEN') {
         totalGiven += udhar.principalPaise;
         outstandingToCollect += udhar.outstandingPrincipal;
-        givenUdhars.push(udhar);
+        givenUdhars.push({
+          ...udhar.toObject(),
+          originalAmount: udhar.principalPaise / 100,
+          outstandingAmount: udhar.outstandingPrincipal / 100
+        });
       } else if (udhar.udharType === 'TAKEN') {
         totalTaken += udhar.principalPaise;
         outstandingToPay += udhar.outstandingPrincipal;
-        takenUdhars.push(udhar);
+        takenUdhars.push({
+          ...udhar.toObject(),
+          originalAmount: udhar.principalPaise / 100,
+          outstandingAmount: udhar.outstandingPrincipal / 100
+        });
       }
     });
 
@@ -506,6 +514,27 @@ export const getCustomerUdharSummary = async (req, res) => {
       customer: customerId,
       type: { $in: ['UDHAR_GIVEN', 'UDHAR_TAKEN', 'UDHAR_PAYMENT', 'UDHAR_CLOSURE'] }
     }).sort({ date: -1 });
+
+    // Do not return summary if net amount is zero
+    if (Math.abs(netAmount) < 0.01) {
+      return res.json({
+        success: true,
+        data: {
+          customer: udhars[0]?.customer,
+          totalGiven: totalGiven / 100,
+          totalTaken: totalTaken / 100,
+          outstandingToCollect: outstandingToCollect / 100,
+          outstandingToPay: outstandingToPay / 100,
+          netAmount: netAmount / 100,
+          udhars: {
+            given: [],
+            taken: [],
+            all: []
+          },
+          transactionHistory: []
+        }
+      });
+    }
 
     const summary = {
       customer: udhars[0]?.customer,
@@ -621,11 +650,18 @@ export const getOutstandingToCollect = async (req, res) => {
       totalToCollect += udhar.outstandingPrincipal;
     });
 
-    // Format customer-wise data
-    const formattedCustomerWise = Object.values(customerWise).map(item => ({
-      ...item,
-      totalOutstanding: item.totalOutstanding / 100
-    }));
+    // Format customer-wise data and filter out zero net balances
+    const formattedCustomerWise = Object.values(customerWise).map(item => {
+      const customerId = item.customer._id.toString();
+      const takenUdhars = outstandingUdhars.filter(u => u.customer._id.toString() === customerId && u.udharType === 'TAKEN');
+      const totalTakenOutstanding = takenUdhars.reduce((sum, u) => sum + u.outstandingPrincipal, 0);
+      const netOutstanding = item.totalOutstanding - totalTakenOutstanding;
+      return {
+        ...item,
+        totalOutstanding: item.totalOutstanding / 100,
+        netOutstanding: netOutstanding / 100
+      };
+    }).filter(item => item.netOutstanding > 0.01); // Only include customers with positive net balance
 
     res.json({
       success: true,
@@ -675,11 +711,18 @@ export const getOutstandingToPay = async (req, res) => {
       totalToPay += udhar.outstandingPrincipal;
     });
 
-    // Format customer-wise data
-    const formattedCustomerWise = Object.values(customerWise).map(item => ({
-      ...item,
-      totalOutstanding: item.totalOutstanding / 100
-    }));
+    // Format customer-wise data and filter out zero net balances
+    const formattedCustomerWise = Object.values(customerWise).map(item => {
+      const customerId = item.customer._id.toString();
+      const givenUdhars = outstandingUdhars.filter(u => u.customer._id.toString() === customerId && u.udharType === 'GIVEN');
+      const totalGivenOutstanding = givenUdhars.reduce((sum, u) => sum + u.outstandingPrincipal, 0);
+      const netOutstanding = totalGivenOutstanding - item.totalOutstanding;
+      return {
+        ...item,
+        totalOutstanding: item.totalOutstanding / 100,
+        netOutstanding: netOutstanding / 100
+      };
+    }).filter(item => item.netOutstanding < -0.01); // Only include customers with negative net balance
 
     res.json({
       success: true,
@@ -701,7 +744,9 @@ export const getOverallUdharSummary = async (req, res) => {
   try {
     const summary = await Udhar.aggregate([
       {
-        $match: { sourceType: 'UDHAR' },
+        $match: { sourceType: 'UDHAR', status: { $ne: 'CLOSED' }, outstandingPrincipal: { $gt: 0 } },
+      },
+      {
         $group: {
           _id: '$udharType',
           totalAmount: { $sum: '$principalPaise' },

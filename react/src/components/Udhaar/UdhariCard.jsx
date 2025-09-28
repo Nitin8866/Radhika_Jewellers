@@ -44,9 +44,8 @@ const UdhariCard = ({ udhari, onView }) => {
   const net = udhari.net || 0;
   const transactionCount = udhari.transactions?.length || 0;
 
-  const avatarColor = net > 0 ? 'from-red-500 to-red-600' : net < 0 ? 'from-green-500 to-green-600' : 'from-gray-500 to-gray-600';
-
-  const netColor = net > 0 ? 'text-red-600' : net < 0 ? 'text-green-600' : 'text-gray-600';
+  const avatarColor = net > 0 ? 'from-green-500 to-green-600' : net < 0 ? 'from-red-500 to-red-600' : 'from-gray-500 to-gray-600';
+  const netColor = net > 0 ? 'text-green-600' : net < 0 ? 'text-red-600' : 'text-gray-600';
 
   return (
     <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all group">
@@ -92,11 +91,11 @@ const UdhariCard = ({ udhari, onView }) => {
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
         <div>
           <p className="text-xs text-gray-500">To Collect</p>
-          <p className="text-sm font-bold text-red-600">{formatCurrency(toCollect)}</p>
+          <p className="text-sm font-bold text-green-600">{formatCurrency(toCollect)}</p>
         </div>
         <div>
           <p className="text-xs text-gray-500">To Pay</p>
-          <p className="text-sm font-bold text-green-600">{formatCurrency(toPay)}</p>
+          <p className="text-sm font-bold text-red-600">{formatCurrency(toPay)}</p>
         </div>
         <div>
           <p className="text-xs text-gray-500">Outstanding</p>

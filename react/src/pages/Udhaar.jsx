@@ -12,7 +12,6 @@ const Udhaar = () => {
   const [showAddUdhariModal, setShowAddUdhariModal] = useState(false);
   const [selectedCustomerData, setSelectedCustomerData] = useState(null);
   const [selectedUdhari, setSelectedUdhari] = useState(null);
-  // Removed unused udhariType state
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -46,7 +45,7 @@ const Udhaar = () => {
             toCollect: item.totalOutstanding,
             toPay: 0,
             net: item.totalOutstanding,
-            transactions: item.udhars.map(u => ({...u, type: 'receivable'})),
+            transactions: item.udhars.map(u => ({ ...u, type: 'receivable' })),
             transactionCount: item.udhars.length,
           });
         });
@@ -60,7 +59,7 @@ const Udhaar = () => {
             const entry = customerMap.get(id);
             entry.toPay = item.totalOutstanding;
             entry.net = entry.toCollect - entry.toPay;
-            entry.transactions = [...entry.transactions, ...item.udhars.map(u => ({...u, type: 'payable'}))];
+            entry.transactions = [...entry.transactions, ...item.udhars.map(u => ({ ...u, type: 'payable' }))];
             entry.transactionCount = entry.transactions.length;
           } else {
             customerMap.set(id, {
@@ -68,14 +67,16 @@ const Udhaar = () => {
               toCollect: 0,
               toPay: item.totalOutstanding,
               net: -item.totalOutstanding,
-              transactions: item.udhars.map(u => ({...u, type: 'payable'})),
+              transactions: item.udhars.map(u => ({ ...u, type: 'payable' })),
               transactionCount: item.udhars.length,
             });
           }
         });
       }
 
-      setCustomerUdharis(Array.from(customerMap.values()));
+      // Filter out customers with net balance of zero
+      const filteredUdharis = Array.from(customerMap.values()).filter(entry => Math.abs(entry.net) > 0.01); // Allow small floating-point differences
+      setCustomerUdharis(filteredUdharis);
     } catch (error) {
       console.error('Error loading udharis:', error);
       setError('Failed to load udhari data');
@@ -136,12 +137,17 @@ const Udhaar = () => {
     );
   };
 
-  const filteredCustomerUdharis = filterUdharis(customerUdharis);
-
   const getTabUdharis = () => {
-    if (activeTab === 'overview') return filteredCustomerUdharis;
-    if (activeTab === 'receivable') return filteredCustomerUdharis.filter(c => c.toCollect > 0);
-    if (activeTab === 'payable') return filteredCustomerUdharis.filter(c => c.toPay > 0);
+    const filteredUdharis = filterUdharis(customerUdharis);
+    if (activeTab === 'overview') {
+      return filteredUdharis;
+    }
+    if (activeTab === 'receivable') {
+      return filteredUdharis.filter(c => c.toCollect > 0 && c.net > 0); // Only show if net is positive (to collect)
+    }
+    if (activeTab === 'payable') {
+      return filteredUdharis.filter(c => c.toPay > 0 && c.net < 0); // Only show if net is negative (to pay)
+    }
     return [];
   };
 
@@ -169,28 +175,28 @@ const Udhaar = () => {
         <div className="flex flex-row flex-wrap gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="flex-1 min-w-[250px] max-w-[33.33%] bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <TrendingUp size={20} className="text-red-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <TrendingUp size={20} className="text-green-600" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-medium text-gray-600">To Collect</p>
-                <p className="text-xl sm:text-2xl font-bold text-red-600">{formatCurrency(totalToCollect)}</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(totalToCollect)}</p>
               </div>
             </div>
-            <p className="text-xs sm:text-sm text-gray-500">{customerUdharis.filter(c => c.toCollect > 0).length} customers</p>
+            <p className="text-xs sm:text-sm text-gray-500">{customerUdharis.filter(c => c.toCollect > 0 && c.net > 0).length} customers</p>
           </div>
 
           <div className="flex-1 min-w-[250px] max-w-[33.33%] bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingDown size={20} className="text-green-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <TrendingDown size={20} className="text-red-600" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-medium text-gray-600">To Pay</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(totalToPay)}</p>
+                <p className="text-xl sm:text-2xl font-bold text-red-600">{formatCurrency(totalToPay)}</p>
               </div>
             </div>
-            <p className="text-xs sm:text-sm text-gray-500">{customerUdharis.filter(c => c.toPay > 0).length} customers</p>
+            <p className="text-xs sm:text-sm text-gray-500">{customerUdharis.filter(c => c.toPay > 0 && c.net < 0).length} customers</p>
           </div>
 
           <div className="flex-1 min-w-[250px] max-w-[33.33%] bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
@@ -248,18 +254,18 @@ const Udhaar = () => {
           <button
             onClick={() => setActiveTab('receivable')}
             className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base ${
-              activeTab === 'receivable' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+              activeTab === 'receivable' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
             }`}
           >
-            To Collect ({customerUdharis.filter(c => c.toCollect > 0).length})
+            To Collect ({customerUdharis.filter(c => c.toCollect > 0 && c.net > 0).length})
           </button>
           <button
             onClick={() => setActiveTab('payable')}
             className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base ${
-              activeTab === 'payable' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+              activeTab === 'payable' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
             }`}
           >
-            To Pay ({customerUdharis.filter(c => c.toPay > 0).length})
+            To Pay ({customerUdharis.filter(c => c.toPay > 0 && c.net < 0).length})
           </button>
         </div>
 
@@ -290,7 +296,6 @@ const Udhaar = () => {
                       <UdhariCard
                         udhari={customerdata}
                         onView={() => handleViewUdhari(customerdata)}
-                        onPayment={() => handleDirectPayment(customerdata)}
                       />
                     </div>
                   ))}

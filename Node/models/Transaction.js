@@ -1,21 +1,19 @@
-// models/Transaction.js - SIMPLIFIED VERSION (UNCHANGED, AS IT ALREADY SUPPORTS RECORDING ALL TRANSACTIONS)
 import mongoose from "mongoose";
 
 const transactionSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: [
-      "SILVER_LOAN_GIVEN", "SILVER_LOAN_PAYMENT", "SILVER_LOAN_CLOSURE","SILVER_LOAN_REPAYMENT",
+      "SILVER_LOAN_GIVEN", "SILVER_LOAN_PAYMENT", "SILVER_LOAN_CLOSURE", "SILVER_LOAN_REPAYMENT",
       "SILVER_LOAN_INTEREST_RECEIVED",
-      "GOLD_LOAN_GIVEN", "GOLD_LOAN_PAYMENT", "GOLD_LOAN_CLOSURE","GOLD_LOAN_REPAYMENT",
-      "UDHAR_CLOSURE","INTEREST_PAID",
+      "GOLD_LOAN_GIVEN", "GOLD_LOAN_PAYMENT", "GOLD_LOAN_CLOSURE", "GOLD_LOAN_REPAYMENT",
       "GOLD_LOAN_INTEREST_RECEIVED", "GOLD_LOAN_ITEM_REMOVAL", 
       "GOLD_LOAN_ADDITION", "ITEM_RETURN",
       "LOAN_INTEREST_RECEIVED",
       "LOAN_GIVEN", "LOAN_TAKEN", "LOAN_PAYMENT", "LOAN_CLOSURE",
-      "UDHAR_GIVEN", "UDHAR_RECEIVED", "UDHAR_TAKEN",
+      "UDHAR_GIVEN", "UDHAR_TAKEN", "UDHAR_PAYMENT", "UDHAR_CLOSURE",
       "GOLD_PURCHASE", "SILVER_PURCHASE", "GOLD_SALE", "SILVER_SALE",
-      "BUSINESS_EXPENSE", "OTHER_INCOME", "OTHER_EXPENSE","UDHAR_PAYMENT"
+      "BUSINESS_EXPENSE", "OTHER_INCOME", "OTHER_EXPENSE"
     ],
     required: true,
     index: true
@@ -26,7 +24,7 @@ const transactionSchema = new mongoose.Schema({
     index: true
   },
   amount: { type: Number, required: true }, // Amount in rupees (not paisa)
-  direction: { type: Number, enum: [1, -1, 0], required: true }, // +1 outgoing, -1 incoming, 0 neutral
+  direction: { type: Number, enum: [1, -1, 0], required: true }, // +1 incoming, -1 outgoing, 0 neutral
   description: { type: String, required: true },
   date: { type: Date, default: Date.now, index: true },
   relatedDoc: {
@@ -43,7 +41,6 @@ const transactionSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  // Simplified metadata for tracking
   metadata: {
     goldPrice: { type: Number }, // Gold price at time of transaction (if applicable)
     weightGrams: { type: Number }, // Total weight involved (if applicable)
@@ -51,9 +48,14 @@ const transactionSchema = new mongoose.Schema({
     paymentType: { type: String, enum: ['PRINCIPAL', 'INTEREST', 'COMBINED', 'DISBURSEMENT'] },
     forMonth: { type: String }, // Month for which interest was paid (YYYY-MM format)
     photos: [{ type: String }],
-    notes: { type: String }
+    notes: { type: String },
+    paymentMethod: { type: String },
+    paymentReference: { type: String },
+    bankTransactionId: { type: String },
+    installmentNumber: { type: Number },
+    remainingAmount: { type: Number },
+    isFullPayment: { type: Boolean }
   },
-  // Items affected by this transaction
   affectedItems: [{
     itemId: { type: mongoose.Schema.Types.ObjectId },
     name: { type: String },
@@ -75,8 +77,8 @@ transactionSchema.virtual("formattedAmount").get(function() {
 });
 
 transactionSchema.virtual("transactionDirection").get(function() {
-  if (this.direction === 1) return 'Outgoing';
-  if (this.direction === -1) return 'Incoming';
+  if (this.direction === 1) return 'Incoming';
+  if (this.direction === -1) return 'Outgoing';
   return 'Neutral';
 });
 
@@ -195,8 +197,8 @@ transactionSchema.statics.getCashFlowSummary = function(startDate, endDate) {
         directionLabel: {
           $switch: {
             branches: [
-              { case: { $eq: ['$_id', 1] }, then: 'Outgoing' },
-              { case: { $eq: ['$_id', -1] }, then: 'Incoming' },
+              { case: { $eq: ['$_id', 1] }, then: 'Incoming' },
+              { case: { $eq: ['$_id', -1] }, then: 'Outgoing' },
               { case: { $eq: ['$_id', 0] }, then: 'Neutral' }
             ],
             default: 'Unknown'
