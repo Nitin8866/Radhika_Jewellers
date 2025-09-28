@@ -1,5 +1,4 @@
-// TransactionManagement.js - Main Component with API Integration (Responsive)
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useContext, useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
 import SummaryCards from "./SummaryCards";
 import RecentTransactions from "./RecentTransactions";
@@ -10,19 +9,35 @@ import {
   TransactionTypeSelection,
   CategorySelection,
 } from "./TransactionCategories";
+import { ExpenseContext } from "../../context/ExpenseContext.jsx";
+import ExpenseModal from "../BusinessExpense/ExpenseModal";
+import ApiService from "../../services/api";
 
 const TransactionManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
-  const [currentStep, setCurrentStep] = useState("search"); 
-  const [transactionType, setTransactionType] = useState(""); 
+  const [currentStep, setCurrentStep] = useState("search");
+  const [transactionType, setTransactionType] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [createCustomerInitialData, setCreateCustomerInitialData] = useState(
-    {}
-  );
+  const [createCustomerInitialData, setCreateCustomerInitialData] = useState({});
+
+  const { showAddExpense, editingExpense, handleAddExpense, handleUpdateExpense, handleCloseModal, setOnExpenseAdded } = useContext(ExpenseContext);
+
+  // Refresh RecentTransactions and SummaryCards when an expense is added
+  useEffect(() => {
+    console.log('Setting onExpenseAdded callback with refreshTrigger:', refreshTrigger);
+    setOnExpenseAdded(() => () => {
+      console.log('Expense added, incrementing refreshTrigger from:', refreshTrigger);
+      setRefreshTrigger((prev) => {
+        const newTrigger = prev + 1;
+        console.log('New refreshTrigger value:', newTrigger);
+        return newTrigger;
+      });
+    });
+  }, [setOnExpenseAdded, refreshTrigger]); // Include refreshTrigger to re-run on change
 
   const goBack = () => {
     if (currentStep === "customer") {
@@ -50,7 +65,6 @@ const TransactionManagement = () => {
 
   const handleCreateCustomer = useCallback(() => {
     let initialData = {};
-
     if (searchTerm && !searchTerm.includes("+91") && searchTerm.length > 2) {
       const nameParts = searchTerm.trim().split(" ");
       initialData = {
@@ -58,7 +72,6 @@ const TransactionManagement = () => {
         lastName: nameParts.slice(1).join(" ") || "",
       };
     }
-
     setCreateCustomerInitialData(initialData);
     setShowCreateCustomer(true);
     setCurrentStep("customer");
@@ -82,14 +95,18 @@ const TransactionManagement = () => {
 
   const handleTransactionSuccess = () => {
     setShowSuccess(true);
-    setRefreshTrigger((prev) => prev + 1);
+    setRefreshTrigger((prev) => {
+      const newTrigger = prev + 1;
+      console.log('Transaction success, new refreshTrigger:', newTrigger);
+      return newTrigger;
+    });
   };
 
   const handleAddAnotherTransaction = () => {
     setShowSuccess(false);
     setTransactionType("");
     setSelectedCategory(null);
-    setCurrentStep("category"); 
+    setCurrentStep("category");
   };
 
   const resetForm = () => {
@@ -110,10 +127,16 @@ const TransactionManagement = () => {
   const handleDeleteTransaction = async (id) => {
     if (window.confirm("Are you sure you want to delete this transaction?")) {
       try {
-        console.log("Delete transaction:", id);
-        setRefreshTrigger((prev) => prev + 1);
+        await ApiService.deleteTransaction(id);
+        console.log("Deleted transaction:", id);
+        setRefreshTrigger((prev) => {
+          const newTrigger = prev + 1;
+          console.log('Delete success, new refreshTrigger:', newTrigger);
+          return newTrigger;
+        });
       } catch (error) {
         console.error("Failed to delete transaction:", error);
+        alert("Failed to delete transaction: " + error.message);
       }
     }
   };
@@ -144,9 +167,6 @@ const TransactionManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Transaction Header */}
-      
-
       {/* Summary Cards - Full width on all devices */}
       <div className="w-full px-0">
         <SummaryCards key={refreshTrigger} />
@@ -222,6 +242,17 @@ const TransactionManagement = () => {
           />
         </div>
       </div>
+
+      {/* Expense Modal */}
+      {showAddExpense && (
+        <ExpenseModal
+          isEdit={!!editingExpense}
+          editingExpense={editingExpense}
+          onAdd={handleAddExpense}
+          onUpdate={handleUpdateExpense}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 };

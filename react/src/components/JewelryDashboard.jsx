@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, ComposedChart 
@@ -14,11 +14,17 @@ import StatsCard from './StatsCard';
 import mockData from '../data/mockData';
 import ReportGenerator from './ReportGenerator';
 import ChartContainer from './ChartContainer';
+import { ExpenseContext } from '../context/ExpenseContext.jsx';
+import ExpenseModal from './BusinessExpense/ExpenseModal';
+import ApiService from '../services/api';
+
 const COLORS = ['#FFD700', '#B9F2FF', '#C0C0C0', '#E5E4E2', '#DDA0DD'];
+
 const JewelryDashboard = () => {
   const [timeFilter, setTimeFilter] = useState('6months');
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const { showAddExpense, editingExpense, handleAddExpense, handleCloseModal, handleUpdateExpense } = useContext(ExpenseContext);
 
   const refreshData = async () => {
     setRefreshing(true);
@@ -273,8 +279,20 @@ const JewelryDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Add/Edit Expense Modal */}
+        {showAddExpense && (
+          <ExpenseModal
+            isEdit={!!editingExpense}
+            editingExpense={editingExpense}
+            onAdd={handleAddExpense}
+            onUpdate={handleUpdateExpense}
+            onClose={handleCloseModal}
+          />
+        )}
       </div>
     </div>
   );
 };
+
 export default JewelryDashboard;

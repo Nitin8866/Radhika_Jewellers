@@ -16,7 +16,7 @@ import AddLoanModal from '../components/Loan/AddLoanModal';
 import LoanCard from '../components/Loan/LoanCard';
 import LoanDetailModal from '../components/Loan/LoanDetailModal';
 import LoanPaymentModal from '../components/Loan/LoanPaymentModal';
-import LInterstPaymentModal from '../components/Loan/LInterestPaymentModal';
+import LInterestPaymentModal from '../components/Loan/LInterestPaymentModal';
 import CustomerSearch from '../components/CustomerSearch.jsx';
 
 const Loan = () => {
@@ -49,8 +49,8 @@ const Loan = () => {
       if (receivableResponse.success) {
         const receivableData = receivableResponse.data.customerWise.map(item => ({
           customer: item.customer,
-          totalOutstanding: item.totalOutstanding,
-          interestDue: item.interestDue || 0,
+          totalOutstanding: item.totalOutstanding / 100, // Convert paise to rupees
+          interestDue: (item.interestDue || 0) / 100, // Convert paise to rupees
           loans: item.loans || [],
           type: 'receivable'
         }));
@@ -60,8 +60,8 @@ const Loan = () => {
       if (payableResponse.success) {
         const payableData = payableResponse.data.customerWise.map(item => ({
           customer: item.customer,
-          totalOutstanding: item.totalOutstanding,
-          interestDue: item.interestDue || 0,
+          totalOutstanding: item.totalOutstanding / 100, // Convert paise to rupees
+          interestDue: (item.interestDue || 0) / 100, // Convert paise to rupees
           loans: item.loans || [],
           type: 'payable'
         }));
@@ -79,26 +79,31 @@ const Loan = () => {
     loadLoans();
   };
 
-  const handleViewLoan = (loan) => {
-    setSelectedLoan(loan);
-    setShowDetailModal(true);
+  const handleViewLoan = (loanGroup) => {
+    if (loanGroup.loans && loanGroup.loans.length > 0) {
+      setSelectedLoan(loanGroup.loans[0]);
+      setShowDetailModal(true);
+    } else {
+      setError('No loan details available');
+    }
   };
-const handlePrincipalPayment = (loan) => {
-    if (loan && loan._id) {
-      setSelectedLoan(loan);
+
+  const handlePrincipalPayment = (loanGroup) => {
+    if (loanGroup.loans && loanGroup.loans.length > 0) {
+      setSelectedLoan(loanGroup.loans[0]);
       setShowPaymentModal(true);
     } else {
-      console.error('Invalid loan for principal payment:', loan);
+      console.error('Invalid loan for principal payment');
       setError('Cannot process payment: Invalid loan data');
     }
   };
 
-  const handleInterestPayment = (loan) => {
-    if (loan && loan._id) {
-      setSelectedLoan(loan);
+  const handleInterestPayment = (loanGroup) => {
+    if (loanGroup.loans && loanGroup.loans.length > 0) {
+      setSelectedLoan(loanGroup.loans[0]);
       setShowInterestModal(true);
     } else {
-      console.error('Invalid loan for interest payment:', loan);
+      console.error('Invalid loan for interest payment');
       setError('Cannot process payment: Invalid loan data');
     }
   };
@@ -114,7 +119,7 @@ const handlePrincipalPayment = (loan) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0
+      minimumFractionDigits: 2
     }).format(amount);
   };
 
@@ -208,17 +213,17 @@ const handlePrincipalPayment = (loan) => {
 
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1">
-              <CustomerSearch
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                onCustomerSelect={(customer) => {
-                  console.log("Selected customer:", customer);
-                }}
-                onCreateCustomer={() => {
-                  console.log("Create new customer clicked");
-                }}
-              />
-            </div>
+            <CustomerSearch
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              onCustomerSelect={(customer) => {
+                console.log("Selected customer:", customer);
+              }}
+              onCreateCustomer={() => {
+                console.log("Create new customer clicked");
+              }}
+            />
+          </div>
           <button
             onClick={loadLoans}
             className="p-3 border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
@@ -291,14 +296,11 @@ const handlePrincipalPayment = (loan) => {
                         To Collect ({filteredReceivableLoans.length})
                       </h2>
                       <div className="flex flex-row flex-wrap gap-4">
-                        {filteredReceivableLoans.map((loan, index) => (
+                        {filteredReceivableLoans.map((loanGroup, index) => (
                           <div key={`receivable-${index}`} className="flex-1 min-w-[250px] max-w-[33.33%]">
                             <LoanCard
-                              loan={loan}
-                              type="receivable"
-                              onView={() => handleViewLoan(loan)}
-                              onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                              onInterestPayment={() => handleInterestPayment(loan.loans[0])}
+                              loan={loanGroup}
+                              onView={() => handleViewLoan(loanGroup)}
                             />
                           </div>
                         ))}
@@ -315,14 +317,11 @@ const handlePrincipalPayment = (loan) => {
                         To Pay ({filteredPayableLoans.length})
                       </h2>
                       <div className="flex flex-row flex-wrap gap-4">
-                        {filteredPayableLoans.map((loan, index) => (
+                        {filteredPayableLoans.map((loanGroup, index) => (
                           <div key={`payable-${index}`} className="flex-1 min-w-[250px] max-w-[33.33%]">
                             <LoanCard
-                              loan={loan}
-                              type="payable"
-                              onView={() => handleViewLoan(loan)}
-                              onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                              onInterestPayment={() => handleInterestPayment(loan.loans[0])}
+                              loan={loanGroup}
+                              onView={() => handleViewLoan(loanGroup)}
                             />
                           </div>
                         ))}
@@ -351,14 +350,11 @@ const handlePrincipalPayment = (loan) => {
                 <div className="space-y-4">
                   {filteredReceivableLoans.length > 0 ? (
                     <div className="flex flex-row flex-wrap gap-4">
-                      {filteredReceivableLoans.map((loan, index) => (
+                      {filteredReceivableLoans.map((loanGroup, index) => (
                         <div key={`receivable-${index}`} className="flex-1 min-w-[250px] max-w-[33.33%]">
                           <LoanCard
-                            loan={loan}
-                            type="receivable"
-                            onView={() => handleViewLoan(loan)}
-                            onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                            onInterestPayment={() => handleInterestPayment(loan.loans[0])}
+                            loan={loanGroup}
+                            onView={() => handleViewLoan(loanGroup)}
                           />
                         </div>
                       ))}
@@ -376,15 +372,12 @@ const handlePrincipalPayment = (loan) => {
               {activeTab === 'payable' && (
                 <div className="space-y-4">
                   {filteredPayableLoans.length > 0 ? (
-                    <div className="flex flex-row flex-wrap gap-4">
-                      {filteredPayableLoans.map((loan, index) => (
+                    <div className="flex-|row flex-wrap gap-4">
+                      {filteredPayableLoans.map((loanGroup, index) => (
                         <div key={`payable-${index}`} className="flex-1 min-w-[250px] max-w-[33.33%]">
                           <LoanCard
-                            loan={loan}
-                            type="payable"
-                            onView={() => handleViewLoan(loan)}
-                            onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                            onInterestPayment={() => handleInterestPayment(loan.loans[0])}
+                            loan={loanGroup}
+                            onView={() => handleViewLoan(loanGroup)}
                           />
                         </div>
                       ))}
@@ -413,14 +406,8 @@ const handlePrincipalPayment = (loan) => {
           loanData={selectedLoan}
           loanType={selectedLoan?.type}
           onClose={() => setShowDetailModal(false)}
-          onPrincipalPayment={() => {
-            setShowDetailModal(false);
-            handlePrincipalPayment(selectedLoan?.loans[0]);
-          }}
-          onInterestPayment={() => {
-            setShowDetailModal(false);
-            handleInterestPayment(selectedLoan?.loans[0]);
-          }}
+          onPrincipalPayment={handlePrincipalPayment}
+          onInterestPayment={handleInterestPayment}
         />
 
         <LoanPaymentModal
@@ -430,7 +417,7 @@ const handlePrincipalPayment = (loan) => {
           onSuccess={handlePaymentSuccess}
         />
 
-        <LInterstPaymentModal
+        <LInterestPaymentModal
           isOpen={showInterestModal}
           loan={selectedLoan}
           onClose={() => setShowInterestModal(false)}

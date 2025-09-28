@@ -299,54 +299,54 @@ const GoldLoanTab = ({ customerId, onRefresh }) => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-amber-50 rounded-lg">
               <Coins size={20} className="text-amber-600" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-500">Total Loans</p>
-              <p className="text-2xl font-bold text-gray-900">{summary.totalLoans}</p>
+              <p className="text-xl font-bold text-gray-900">{summary.totalLoans}</p>
             </div>
           </div>
           <p className="text-sm text-gray-600">Active: {summary.activeLoans}</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 rounded-lg">
               <DollarSign size={20} className="text-blue-600" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-500">Total Amount</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary.totalAmount)}</p>
+              <p className="text-xl font-bold text-blue-600 truncate">{formatCurrency(summary.totalAmount)}</p>
             </div>
           </div>
           <p className="text-sm text-gray-600">Disbursed loans</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-red-50 rounded-lg">
               <TrendingUp size={20} className="text-red-600" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-500">Outstanding</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.totalOutstanding)}</p>
+              <p className="text-xl font-bold text-red-600 truncate">{formatCurrency(summary.totalOutstanding)}</p>
             </div>
           </div>
           <p className="text-sm text-gray-600">Pending repayment</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-yellow-50 rounded-lg">
               <Weight size={20} className="text-yellow-600" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-500">Total Weight</p>
-              <p className="text-2xl font-bold text-yellow-600">{formatWeight(summary.totalWeight)}</p>
+              <p className="text-xl font-bold text-yellow-600">{formatWeight(summary.totalWeight)}</p>
             </div>
           </div>
           <p className="text-sm text-gray-600">Gold pledged</p>
@@ -354,66 +354,66 @@ const GoldLoanTab = ({ customerId, onRefresh }) => {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search gold loans..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              />
-            </div>
-            
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CLOSED">Closed</option>
-              <option value="OVERDUE">Overdue</option>
-            </select>
-
-            <select
-              value={goldTypeFilter}
-              onChange={(e) => setGoldTypeFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            >
-              <option value="all">All Purity</option>
-              <option value="24">24K</option>
-              <option value="22">22K</option>
-              <option value="18">18K</option>
-              <option value="14">14K</option>
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            >
-              <option value="createdAt">Latest First</option>
-              <option value="customer">Customer Name</option>
-              <option value="loanAmount">Loan Amount</option>
-              <option value="dueDate">Due Date</option>
-            </select>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search gold loans..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent w-full text-sm"
+            />
           </div>
+          
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent min-w-[120px] text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CLOSED">Closed</option>
+            <option value="OVERDUE">Overdue</option>
+          </select>
+
+          <select
+            value={goldTypeFilter}
+            onChange={(e) => setGoldTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent min-w-[120px] text-sm"
+          >
+            <option value="all">All Purity</option>
+            <option value="24">24K</option>
+            <option value="22">22K</option>
+            <option value="18">18K</option>
+            <option value="14">14K</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent min-w-[120px] text-sm"
+          >
+            <option value="createdAt">Latest First</option>
+            <option value="customer">Customer Name</option>
+            <option value="loanAmount">Loan Amount</option>
+            <option value="dueDate">Due Date</option>
+          </select>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
+              title="Grid View"
             >
               <Grid size={20} />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
+              title="List View"
             >
               <List size={20} />
             </button>
@@ -455,7 +455,7 @@ const GoldLoanTab = ({ customerId, onRefresh }) => {
             )}
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredLoans.map(loan => (
               <GoldLoanCard
                 key={loan._id}
@@ -497,7 +497,7 @@ const GoldLoanTab = ({ customerId, onRefresh }) => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semiboral text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>

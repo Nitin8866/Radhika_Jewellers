@@ -1,6 +1,5 @@
-// components/BusinessExpense/ExpenseModal.js
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2 } from 'lucide-react';
+import { Plus, Edit2, CheckCircle2, XCircle } from 'lucide-react';
 
 const ExpenseModal = ({ isEdit, editingExpense, onAdd, onUpdate, onClose }) => {
   const [formData, setFormData] = useState({
@@ -8,9 +7,9 @@ const ExpenseModal = ({ isEdit, editingExpense, onAdd, onUpdate, onClose }) => {
     description: '',
     amount: '',
   });
-
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState(false);
 
   // Initialize form data when editing
   useEffect(() => {
@@ -33,7 +32,7 @@ const ExpenseModal = ({ isEdit, editingExpense, onAdd, onUpdate, onClose }) => {
         id: expenseId,
         date: expenseDate,
         description: editingExpense.description || '',
-        amount: grossAmount.toString(),
+        amount: grossAmount.toString(), // Assume rupees from backend
       });
     } else {
       // Reset form for new expense
@@ -62,48 +61,46 @@ const ExpenseModal = ({ isEdit, editingExpense, onAdd, onUpdate, onClose }) => {
     if (!validateForm()) return;
 
     setLoading(true);
-console.log("Submitting amount:", formData.amount, typeof parseFloat(formData.amount));
+    setSuccess(false);
+    setErrors((prev) => ({ ...prev, general: '' }));
+
     // Construct minimal expense data for backend
     const expenseData = {
-      category: 'MISCELLANEOUS', // Default category since not provided
-      title: formData.description.trim(), // Use description as title
+      category: 'MISCELLANEOUS',
+      title: formData.description.trim(),
       description: formData.description.trim(),
       vendor: {
-        name: 'Unknown Vendor', // Default vendor name
+        name: 'Unknown Vendor',
       },
-      grossAmount: parseFloat(formData.amount),
+      grossAmount: parseFloat(formData.amount), // Send in rupees
       taxDetails: {
-        totalTax: 0, // No tax details provided
+        totalTax: 0,
         cgst: 0,
         sgst: 0,
         igst: 0,
         cess: 0,
       },
-      paymentStatus: 'PENDING', // Default to PENDING
+      paymentStatus: 'PENDING',
       expenseDate: formData.date,
     };
 
-    try {
-      let result;
-      if (isEdit) {
-        console.log('Sending update data:', expenseData);
-        console.log('Expense ID:', formData.id);
-        result = await onUpdate(formData.id, expenseData);
-      } else {
-        console.log('Sending create data:', expenseData);
-        result = await onAdd(expenseData);
-      }
+    console.log('Submitting amount:', formData.amount, typeof parseFloat(formData.amount));
+    console.log('Sending create data:', expenseData);
 
-      if (result && result.success) {
+    const result = isEdit
+      ? await onUpdate(formData.id, expenseData)
+      : await onAdd(expenseData);
+
+    setLoading(false);
+
+    if (result.success) {
+      setSuccess(true);
+      setTimeout(() => {
         resetForm();
-      } else {
-        alert('Failed to save expense: ' + (result?.error || result?.message || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error saving expense:', error);
-      alert('Failed to save expense: ' + error.message);
-    } finally {
-      setLoading(false);
+        setSuccess(false);
+      }, 2000);
+    } else {
+      setErrors((prev) => ({ ...prev, general: result.message || 'Failed to save expense: Unknown error' }));
     }
   };
 
@@ -156,9 +153,18 @@ console.log("Submitting amount:", formData.amount, typeof parseFloat(formData.am
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Show success message */}
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <p className="text-green-600 text-sm">Expense saved successfully!</p>
+            </div>
+          )}
+
           {/* Show general error if any */}
           {errors.general && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
               <p className="text-red-600 text-sm">{errors.general}</p>
             </div>
           )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Download } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ApiService from '../services/api';
 import ExpenseStats from '../components/BusinessExpense/ExpenseStats';
 import ExpenseFilters from '../components/BusinessExpense/ExpenseFilters';
@@ -23,6 +24,18 @@ const BusinessExpense = () => {
         pendingExpenses: 0,
         thisMonth: { totalAmount: 0, totalExpenses: 0 }
     });
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Check for openModal query parameter on mount
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        if (queryParams.get('openModal') === 'true') {
+            setShowAddExpense(true);
+            // Clear query parameter to prevent modal from reopening on refresh
+            navigate('/business-expense', { replace: true });
+        }
+    }, [location, navigate]);
 
     // Fetch expenses and dashboard summary
     useEffect(() => {
@@ -102,7 +115,7 @@ const BusinessExpense = () => {
                 subcategory: response.data.subcategory || '',
                 description: response.data.description,
                 title: response.data.title,
-                amount: Number(response.data.grossAmount), // Ensure amount is stored as a number
+                amount: Number(response.data.grossAmount),
                 vendor: response.data.vendor.name,
                 vendorCode: response.data.vendor.code || '',
                 paymentMethod: response.data.paymentMethod || '',
@@ -115,10 +128,9 @@ const BusinessExpense = () => {
                 pendingAmount: Number(response.data.pendingAmount || 0),
                 metadata: response.data.metadata || {}
             };
-            console.log('New Expense Added:', newExpense.amount, typeof newExpense.amount); // Debug
-            // Remove manual state update and fetch fresh data
-            await fetchExpenses(); // Refresh expenses to ensure consistency
-            await fetchDashboard(); // Refresh summary to reflect new expense
+            console.log('New Expense Added:', newExpense.amount, typeof newExpense.amount);
+            await fetchExpenses();
+            await fetchDashboard();
             setShowAddExpense(false);
             return { success: true };
         } catch (error) {

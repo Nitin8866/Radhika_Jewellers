@@ -135,12 +135,12 @@ const AddLoanModal = ({ isOpen, onClose, onSuccess }) => {
 
       const loanData = {
         customer: selectedCustomer._id,
-        principalPaise: Math.round(parseFloat(formData.amount) * 100),
+        principalPaise: Math.round(parseFloat(formData.amount) * 10000), // Changed from * 100 to * 10000
         interestRateMonthlyPct: parseFloat(formData.interestRate),
         note: formData.note.trim() || '',
         totalInstallments: parseInt(formData.totalInstallments) || 1,
-        takenDate: formData.startDate ? new Date(formData.startDate) : new Date(),
-        dueDate: formData.returnDate || null,
+        takenDate: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
+        dueDate: formData.returnDate ? new Date(formData.returnDate).toISOString() : null,
         paymentMethod: formData.paymentMethod || 'CASH'
       };
       
@@ -417,7 +417,7 @@ const AddLoanModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Principal Amount *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Principal Amount (₹) *</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500">₹</span>
                   <input
@@ -498,30 +498,6 @@ const AddLoanModal = ({ isOpen, onClose, onSuccess }) => {
                   onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                 />
               </div>
-
-              {/* <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Expected Return Date (Optional)</label>
-                <input
-                  type="date"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={formData.returnDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, returnDate: e.target.value }))}
-                  min={formData.startDate || new Date().toISOString().split('T')[0]}
-                />
-              </div> */}
-
-              {/* <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Total Installments</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={formData.totalInstallments}
-                  onChange={(e) => setFormData(prev => ({ ...prev, totalInstallments: e.target.value }))}
-                />
-                <p className="text-sm text-slate-500 mt-1">Number of payments expected for this loan</p>
-              </div> */}
 
               <div className="flex gap-3 pt-4">
                 <button

@@ -115,7 +115,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
               <Gem className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">JewelryPro</h1>
+              <h1 className="text-xl font-bold text-gray-900">RJ</h1>
               <p className="text-xs text-gray-500">Business Manager</p>
             </div>
           </div>

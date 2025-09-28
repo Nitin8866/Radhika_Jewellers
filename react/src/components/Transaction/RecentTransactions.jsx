@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Edit, Trash2, User, Calendar, FileText } from 'lucide-react';
-import ApiService from '../../services/api';
+import { transactionService } from '../../services/transactionService'; // For getRecentTransactions
+import ApiService from '../../services/api'; // For paiseToRupees in formatCurrency
 
 const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
   const [transactions, setTransactions] = useState([]);
@@ -15,15 +16,37 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
   const fetchRecentTransactions = async () => {
     try {
       setLoading(true);
-      const response = await ApiService.getAllTransactions();
-      if (response.success && response.data) {
-        // Fixed: response.data is already the array of transactions
-        setTransactions(response.data);
-      } else {
-        throw new Error('Failed to fetch transactions');
-      }
+      setError('');
+      setTransactions([]);
+
+      // Fetch recent transactions
+      const txnResponse = await transactionService.getRecentTransactions(50).catch(err => {
+        console.error('Error fetching recent transactions:', err);
+        return { success: false, data: [] };
+      });
+
+      console.log('Raw transaction data:', txnResponse.data);
+
+      // Map transactions
+      const mappedTransactions = (txnResponse.success && txnResponse.data ? txnResponse.data : []).map(txn => ({
+        ...txn,
+        type: txn.type || 'TRANSACTION',
+        category: txn.category || (txn.amount >= 0 ? 'INCOME' : 'EXPENSE'),
+        date: txn.date ? new Date(txn.date).toISOString() : new Date().toISOString(),
+        customer: txn.customer || null,
+        description: txn.description || ''
+      }));
+
+      // Sort by date
+      const combined = mappedTransactions
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      console.log('Combined transactions:', combined);
+
+      setTransactions(combined);
+      // Remove error setting for empty array to allow empty state UI
     } catch (err) {
-      console.error('Failed to fetch transactions:', err);
+      console.error('Unexpected error in fetchRecentTransactions:', err);
       setError('Failed to load recent transactions');
     } finally {
       setLoading(false);
@@ -32,17 +55,23 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
 
   const formatCurrency = (amountInPaise) => {
     const amountInRupees = ApiService.paiseToRupees(amountInPaise);
-    
-    const formatted = new Intl.NumberFormat("en-IN", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 2
     }).format(amountInRupees);
-    
-    return formatted;
   };
 
   const formatDate = (dateString) => {
+    if (!dateString || isNaN(new Date(dateString).getTime())) {
+      console.warn(`Invalid dateString: ${dateString}. Returning fallback date.`);
+      return new Date().toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
@@ -59,6 +88,7 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
       case 'UDHARI_GIVEN':
       case 'GOLD_PURCHASE':
       case 'BUSINESS_LOAN_TAKEN':
+      case 'EXPENSE':
         return TrendingDown;
       case 'GOLD_LOAN_PAYMENT':
       case 'GOLD_LOAN_INTEREST_RECEIVED':
@@ -90,7 +120,8 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
       'UDHARI_GIVEN': 'Udhari Given',
       'UDHARI_RECEIVED': 'Udhari Received',
       'BUSINESS_LOAN_TAKEN': 'Business Loan Taken',
-      'BUSINESS_LOAN_GIVEN': 'Business Loan Given'
+      'BUSINESS_LOAN_GIVEN': 'Business Loan Given',
+      'EXPENSE': 'Business Expense'
     };
     return typeMap[type] || type.replace(/_/g, ' ');
   };
@@ -159,8 +190,8 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
             
             return (
               <div
-                key={transaction._id}
-                className="flex flex-wrap items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100"
+                key={`${transaction._id}-${transaction.date}`} // Unique key with date
+                className="flex flex-wrap items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
               >
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className={`w-10 h-10 ${color === 'emerald' ? 'bg-emerald-100' : 'bg-red-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
@@ -208,7 +239,7 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
                       <Edit size={16} />
                     </button>
                     <button
-                      onClick={() => onDelete && onDelete(transaction._id)}
+                      onClick={() => onDelete && onDelete(transaction._id, transaction.type)}
                       className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                       title="Delete Transaction"
                     >

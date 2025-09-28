@@ -583,12 +583,17 @@ const CustomerManagement = () => {
             color="purple"
           />
           <StatsCard
-            icon={DollarSign}
-            title="Total Amount"
-            value={stats.totalAmount > 100000 ? `₹${(stats.totalAmount / 100000).toFixed(1)}L` : `₹${(stats.totalAmount / 1000).toFixed(1)}K`}
-            subtitle="Total loan amount"
-            color="orange"
-          />
+  icon={DollarSign}
+  title="Total Amount"
+  value={new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2
+  }).format(ApiService.paiseToRupees(stats.totalAmount))}
+  subtitle="Total loan amount"
+  color="orange"
+/>
         </div>
 
 

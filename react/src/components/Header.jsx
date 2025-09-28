@@ -1,12 +1,68 @@
-import React from 'react';
-import { Search, User, Menu, Bell, ChevronDown } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-import CustomerSearch from "./CustomerSearch"; 
-import { useState } from "react";
+import React, { useContext, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext.jsx';
+import { ExpenseContext } from '../context/ExpenseContext.jsx';
+import { Search, User, Menu, Bell, ChevronDown, LogOut, Plus } from 'lucide-react';
+import CustomerSearch from './CustomerSearch';
+import UdhariCard from './UdhariCard'; // Import UdhariCard
+import { motion, AnimatePresence } from 'framer-motion';
 
-const Header = ({ toggleSidebar, isMobile, onNotificationClick }) => {
+// Mock udhaar data (replace with actual data from ExpenseContext or API)
+const mockUdhaarData = [
+  { id: 1, customer: { name: 'John Doe', phone: '1234567890' }, toCollect: 5000, toPay: 2000, net: 3000, transactions: [{}] },
+  { id: 2, customer: { name: 'Jane Smith', phone: '0987654321' }, toCollect: 1000, toPay: 3000, net: -2000, transactions: [{}] },
+  { id: 3, customer: { name: 'Alice Johnson', phone: '5555555555' }, toCollect: 7000, toPay: 0, net: 7000, transactions: [{}] },
+];
+
+const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClick }) => {
   const location = useLocation();
-  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
+  const { setShowAddExpense } = useContext(ExpenseContext);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLogoutPopupOpen, setIsLogoutPopupOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false); // State for notification modal
+
+  // Replace mockUdhaarData with actual data from ExpenseContext or API
+  const udhaarData = mockUdhaarData; // TODO: Fetch from ExpenseContext or API
+  const pendingUdhaars = udhaarData.filter((udhari) => udhari.net > 0);
+  const hasPendingBalances = pendingUdhaars.length > 0;
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
+    setIsLogoutPopupOpen(false);
+  };
+
+  // Open/close logout popup
+  const openLogoutPopup = () => {
+    setIsLogoutPopupOpen(true);
+  };
+
+  const closeLogoutPopup = () => {
+    setIsLogoutPopupOpen(false);
+  };
+
+  // Open/close notification modal
+  const openNotificationModal = () => {
+    setIsNotificationOpen(true);
+    if (onNotificationClick) {
+      onNotificationClick();
+    }
+  };
+
+  const closeNotificationModal = () => {
+    setIsNotificationOpen(false);
+  };
+
+  // Handle Add Expense button click
+  const handleAddExpenseClick = () => {
+    setShowAddExpense(true);
+    if (onAddExpenseClick) {
+      onAddExpenseClick();
+    }
+  };
 
   // Get page title from current route
   const getPageTitle = () => {
@@ -41,6 +97,7 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick }) => {
     }
   };
 
+  // Get page description from current route
   const getPageDescription = () => {
     const path = location.pathname;
     switch (path) {
@@ -56,7 +113,7 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick }) => {
         return 'Manage silverloan inventory';
       case '/loan':
         return 'Manage customer loans';
-      case '/bussiness-expense':
+      case '/business-expense':
         return 'Financial overview and expenses';
       case '/transactions':
         return 'Manage transactions';
@@ -73,85 +130,210 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick }) => {
     }
   };
 
-  // Mock function - replace with actual balance checking logic
-  const hasPendingBalances = true;
-
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {isMobile && (
-            <button
-              onClick={toggleSidebar}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <Menu size={20} className="text-gray-600" />
-            </button>
-          )}
-          
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">
-              {getPageTitle()}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {getPageDescription()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-         {/* Customer Search Bar */}
-          <div className="hidden md:block w-96">
-            <CustomerSearch
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              onCustomerSelect={(customer) => {
-                console.log("Selected customer:", customer);
-                // 👉 you can navigate or open modal with customer details here
-              }}
-              onCreateCustomer={() => {
-                console.log("Create new customer clicked");
-                // 👉 redirect to add-customer page or open modal
-              }}
-            />
-          </div>
-          {/* Notification Bell */}
-          {/* <button 
-            onClick={onNotificationClick}
-            className={`relative p-2 rounded-lg transition-all duration-200 ${
-              hasPendingBalances 
-                ? 'bg-red-100 hover:bg-red-200 animate-pulse' 
-                : 'hover:bg-gray-100'
-            }`}
-          >
-            <Bell 
-              size={20} 
-              className={hasPendingBalances ? 'text-red-600' : 'text-gray-600'} 
-            />
-            {hasPendingBalances && (
-              <>
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  3
-                </span>
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full animate-ping"></span>
-              </>
+    <>
+      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {isMobile && (
+              <button
+                onClick={toggleSidebar}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <Menu size={20} className="text-gray-600" />
+              </button>
             )}
-          </button> */}
-          
-          {/* User Profile */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">JB</span>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
+                {getPageTitle()}
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                {getPageDescription()}
+              </p>
             </div>
-            <div className="hidden md:block">
-              <p className="text-sm font-medium text-gray-900">Jewelry Business</p>
-              <p className="text-xs text-gray-500">Owner</p>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Customer Search Bar */}
+            <div className="hidden md:block w-64 lg:w-96">
+              <CustomerSearch
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                onCustomerSelect={(customer) => {
+                  console.log('Selected customer:', customer);
+                }}
+                onCreateCustomer={() => {
+                  console.log('Create new customer clicked');
+                }}
+              />
             </div>
-            <ChevronDown size={16} className="text-gray-400" />
+
+            {/* Add Expense Button (Visible on Dashboard) */}
+            {location.pathname === '/dashboard' && (
+              <button
+                onClick={handleAddExpenseClick}
+                className="p-2 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium sm:font-semibold shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transform transition-all duration-200 flex items-center gap-1 sm:gap-2"
+              >
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="sm:inline">Add Expense</span>
+              </button>
+            )}
+
+            {/* Notification Bell */}
+            <button
+              onClick={openNotificationModal}
+              className={`relative p-2 rounded-lg transition-all duration-200 ${
+                hasPendingBalances
+                  ? 'bg-red-100 hover:bg-red-200 animate-pulse'
+                  : 'hover:bg-gray-100'
+              }`}
+            >
+              <Bell
+                size={20}
+                className={hasPendingBalances ? 'text-red-600' : 'text-gray-600'}
+              />
+              {hasPendingBalances && (
+                <>
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {pendingUdhaars.length}
+                  </span>
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full animate-ping"></span>
+                </>
+              )}
+            </button>
+
+            {/* User Profile and Logout */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-medium">RJ</span>
+              </div>
+              <div className="hidden md:block">
+                <p className="text-sm font-medium text-gray-900">Jewelry Business</p>
+                <p className="text-xs text-gray-500">Owner</p>
+              </div>
+              <button
+                onClick={openLogoutPopup}
+                className="flex items-center px-3 sm:px-4 py-1 sm:py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                <LogOut className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Logout Confirmation Popup */}
+      <AnimatePresence>
+        {isLogoutPopupOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={closeLogoutPopup}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Confirm Logout
+                </h3>
+                <button
+                  onClick={closeLogoutPopup}
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to log out of your account?
+              </p>
+              <div className="flex justify-end gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={closeLogoutPopup}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Logout
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Notification Modal */}
+      <AnimatePresence>
+        {isNotificationOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={closeNotificationModal}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Pending Udhaars
+                </h3>
+                <button
+                  onClick={closeNotificationModal}
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {pendingUdhaars.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingUdhaars.map((udhari) => (
+                    <UdhariCard
+                      key={udhari.id}
+                      udhari={udhari}
+                      onView={() => {
+                        console.log('View udhari:', udhari);
+                        navigate('/udhaar'); // Navigate to udhaar page or specific udhari
+                        closeNotificationModal();
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  No pending udhaars with outstanding amounts.
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
