@@ -42,7 +42,7 @@ const AddLoanModal = ({
 
       const loanData = {
         customer: selectedCustomer._id,
-        principalPaise: Math.round(parseFloat(formData.amount) * 100),
+        principalPaise: Math.round(parseFloat(formData.amount) ),
         interestRateMonthlyPct: parseFloat(formData.interestRate),
         note: formData.note.trim() || "",
         takenDate: formData.startDate
