@@ -1,32 +1,33 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { ExpenseContext } from '../context/ExpenseContext.jsx';
-import { Search, User, Menu, Bell, ChevronDown, LogOut, Plus } from 'lucide-react';
+import { Menu, Bell, LogOut, Plus } from 'lucide-react';
 import CustomerSearch from './CustomerSearch';
-import UdhariCard from './UdhariCard'; // Import UdhariCard
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Mock udhaar data (replace with actual data from ExpenseContext or API)
-const mockUdhaarData = [
-  { id: 1, customer: { name: 'John Doe', phone: '1234567890' }, toCollect: 5000, toPay: 2000, net: 3000, transactions: [{}] },
-  { id: 2, customer: { name: 'Jane Smith', phone: '0987654321' }, toCollect: 1000, toPay: 3000, net: -2000, transactions: [{}] },
-  { id: 3, customer: { name: 'Alice Johnson', phone: '5555555555' }, toCollect: 7000, toPay: 0, net: 7000, transactions: [{}] },
-];
+import NotificationBell from './NotificationBell.jsx';
 
 const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
-  const { setShowAddExpense } = useContext(ExpenseContext);
+  const { setShowAddExpense, udhaarData } = useContext(ExpenseContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLogoutPopupOpen, setIsLogoutPopupOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false); // State for notification modal
+  const [hasPendingUdhaars, setHasPendingUdhaars] = useState(false);
+  const [pendingUdhaarsCount, setPendingUdhaarsCount] = useState(0);
 
-  // Replace mockUdhaarData with actual data from ExpenseContext or API
-  const udhaarData = mockUdhaarData; // TODO: Fetch from ExpenseContext or API
-  const pendingUdhaars = udhaarData.filter((udhari) => udhari.net > 0);
-  const hasPendingBalances = pendingUdhaars.length > 0;
+  // Check for pending udhaars (net !== 0)
+  useEffect(() => {
+    if (udhaarData && Array.isArray(udhaarData)) {
+      const pending = udhaarData.filter((udhari) => Math.abs(udhari.net) > 0.01); // Match Udhaar.jsx filtering
+      setPendingUdhaarsCount(pending.length);
+      setHasPendingUdhaars(pending.length > 0);
+    } else {
+      setPendingUdhaarsCount(0);
+      setHasPendingUdhaars(false);
+    }
+  }, [udhaarData]);
 
   // Handle logout
   const handleLogout = () => {
@@ -44,16 +45,14 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClic
     setIsLogoutPopupOpen(false);
   };
 
-  // Open/close notification modal
-  const openNotificationModal = () => {
-    setIsNotificationOpen(true);
-    if (onNotificationClick) {
-      onNotificationClick();
+  // Handle notification bell click
+  const handleNotificationClick = () => {
+    if (hasPendingUdhaars) {
+      navigate('/udhaar');
+      if (onNotificationClick) {
+        onNotificationClick();
+      }
     }
-  };
-
-  const closeNotificationModal = () => {
-    setIsNotificationOpen(false);
   };
 
   // Handle Add Expense button click
@@ -178,29 +177,7 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClic
               </button>
             )}
 
-            {/* Notification Bell */}
-            <button
-              onClick={openNotificationModal}
-              className={`relative p-2 rounded-lg transition-all duration-200 ${
-                hasPendingBalances
-                  ? 'bg-red-100 hover:bg-red-200 animate-pulse'
-                  : 'hover:bg-gray-100'
-              }`}
-            >
-              <Bell
-                size={20}
-                className={hasPendingBalances ? 'text-red-600' : 'text-gray-600'}
-              />
-              {hasPendingBalances && (
-                <>
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {pendingUdhaars.length}
-                  </span>
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full animate-ping"></span>
-                </>
-              )}
-            </button>
-
+           <NotificationBell />
             {/* User Profile and Logout */}
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
@@ -274,61 +251,6 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClic
                   Logout
                 </motion.button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Notification Modal */}
-      <AnimatePresence>
-        {isNotificationOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={closeNotificationModal}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 20 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Pending Udhaars
-                </h3>
-                <button
-                  onClick={closeNotificationModal}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              {pendingUdhaars.length > 0 ? (
-                <div className="space-y-4">
-                  {pendingUdhaars.map((udhari) => (
-                    <UdhariCard
-                      key={udhari.id}
-                      udhari={udhari}
-                      onView={() => {
-                        console.log('View udhari:', udhari);
-                        navigate('/udhaar'); // Navigate to udhaar page or specific udhari
-                        closeNotificationModal();
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  No pending udhaars with outstanding amounts.
-                </p>
-              )}
             </motion.div>
           </motion.div>
         )}
