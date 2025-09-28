@@ -94,8 +94,8 @@ export const giveLoan = async (req, res) => {
       message: 'Loan given successfully',
       data: {
         ...savedLoan.toObject(),
-        principalRupees: principalPaise / 100,
-        outstandingRupees: principalPaise / 100,
+        principalRupees: principalPaise ,
+        outstandingRupees: principalPaise ,
         transactionId: savedTransaction._id
       }
     });
@@ -185,8 +185,8 @@ export const takeLoan = async (req, res) => {
       message: 'Loan taken successfully',
       data: {
         ...savedLoan.toObject(),
-        principalRupees: principalPaise / 100,
-        outstandingRupees: principalPaise / 100,
+        principalRupees: principalPaise ,
+        outstandingRupees: principalPaise ,
         transactionId: savedTransaction._id
       }
     });
@@ -347,21 +347,21 @@ export const receiveLoanPayment = async (req, res) => {
       message: outstandingAfter <= 0 ? 'Loan fully paid and settled!' : 'Payment received successfully',
       data: {
         payment: {
-          principalAmount: principalPaise / 100,
-          interestAmount: interestPaise / 100,
-          totalAmount: (principalPaise + interestPaise) / 100,
+          principalAmount: principalPaise ,
+          interestAmount: interestPaise ,
+          totalAmount: (principalPaise + interestPaise) ,
           date: paymentDateObj,
           installmentNumber: installmentNumber || loan.paymentHistory.length,
           note: note || '',
-          outstandingBefore: outstandingBefore / 100,
-          outstandingAfter: outstandingAfter / 100
+          outstandingBefore: outstandingBefore ,
+          outstandingAfter: outstandingAfter 
         },
         loanSummary: {
-          originalAmount: loan.principalPaise / 100,
-          accruedInterest: accruedInterest / 100,
-          totalPrincipalPaid: loan.totalPrincipalPaid / 100,
-          totalInterestPaid: loan.totalInterestPaid / 100,
-          remainingOutstanding: outstandingAfter / 100,
+          originalAmount: loan.principalPaise ,
+          accruedInterest: accruedInterest ,
+          totalPrincipalPaid: loan.totalPrincipalPaid ,
+          totalInterestPaid: loan.totalInterestPaid ,
+          remainingOutstanding: outstandingAfter ,
           paymentPercentage,
           isFullyPaid: outstandingAfter <= 0,
           totalInstallments: loan.totalInstallments,
@@ -531,21 +531,21 @@ export const makeLoanPayment = async (req, res) => {
       message: outstandingAfter <= 0 ? 'Loan fully paid!' : 'Payment made successfully',
       data: {
         payment: {
-          principalAmount: principalPaise / 100,
-          interestAmount: interestPaise / 100,
-          totalAmount: (principalPaise + interestPaise) / 100,
+          principalAmount: principalPaise ,
+          interestAmount: interestPaise ,
+          totalAmount: (principalPaise + interestPaise) ,
           date: paymentDateObj,
           installmentNumber: installmentNumber || loan.paymentHistory.length,
           note: note || '',
-          outstandingBefore: outstandingBefore / 100,
-          outstandingAfter: outstandingAfter / 100
+          outstandingBefore: outstandingBefore ,
+          outstandingAfter: outstandingAfter 
         },
         loanSummary: {
-          originalAmount: loan.principalPaise / 100,
-          accruedInterest: accruedInterest / 100,
-          totalPrincipalPaid: loan.totalPrincipalPaid / 100,
-          totalInterestPaid: loan.totalInterestPaid / 100,
-          remainingOutstanding: outstandingAfter / 100,
+          originalAmount: loan.principalPaise ,
+          accruedInterest: accruedInterest ,
+          totalPrincipalPaid: loan.totalPrincipalPaid ,
+          totalInterestPaid: loan.totalInterestPaid ,
+          remainingOutstanding: outstandingAfter ,
           paymentPercentage,
           isFullyPaid: outstandingAfter <= 0,
           totalInstallments: loan.totalInstallments,
@@ -585,8 +585,8 @@ export const getCustomerLoanSummary = async (req, res) => {
       const currentOutstanding = loan.getCurrentOutstanding(currentDate);
       const loanData = {
         ...loan.toObject(),
-        accruedInterest: accruedInterest / 100,
-        outstandingRupees: currentOutstanding / 100
+        accruedInterest: accruedInterest ,
+        outstandingRupees: currentOutstanding 
       };
 
       if (loan.loanType = 'GIVEN') {
@@ -611,19 +611,19 @@ export const getCustomerLoanSummary = async (req, res) => {
 
     const summary = {
       customer: loans[0]?.customer,
-      totalGiven: totalGiven / 100,
-      totalTaken: totalTaken / 100,
-      outstandingToCollect: outstandingToCollect / 100,
-      outstandingToPay: outstandingToPay / 100,
-      totalInterestPaid: totalInterestPaid / 100,
-      netAmount: netAmount / 100,
+      totalGiven: totalGiven ,
+      totalTaken: totalTaken ,
+      outstandingToCollect: outstandingToCollect ,
+      outstandingToPay: outstandingToPay ,
+      totalInterestPaid: totalInterestPaid ,
+      netAmount: netAmount ,
       loans: {
         given: givenLoans,
         taken: takenLoans,
         all: loans.map(loan => ({
           ...loan.toObject(),
-          accruedInterest: loan.getAccruedInterest(currentDate) / 100,
-          outstandingRupees: loan.getCurrentOutstanding(currentDate) / 100
+          accruedInterest: loan.getAccruedInterest(currentDate) ,
+          outstandingRupees: loan.getCurrentOutstanding(currentDate) 
         }))
       },
       transactionHistory: relatedTransactions
@@ -661,17 +661,17 @@ export const getPaymentHistory = async (req, res) => {
     const currentOutstanding = loan.getCurrentOutstanding(currentDate);
 
     const formattedPaymentHistory = (loan.paymentHistory || []).map(payment => ({
-      principalAmount: payment.principalAmount / 100,
-      interestAmount: payment.interestAmount / 100,
-      totalAmount: (payment.principalAmount + payment.interestAmount) / 100,
+      principalAmount: payment.principalAmount ,
+      interestAmount: payment.interestAmount ,
+      totalAmount: (payment.principalAmount + payment.interestAmount) ,
       date: payment.date,
       installmentNumber: payment.installmentNumber,
       note: payment.note,
       paymentMethod: payment.paymentMethod,
       paymentReference: payment.paymentReference,
       bankTransactionId: payment.bankTransactionId,
-      outstandingBefore: payment.outstandingBefore / 100,
-      outstandingAfter: payment.outstandingAfter / 100
+      outstandingBefore: payment.outstandingBefore ,
+      outstandingAfter: payment.outstandingAfter 
     }));
 
     const relatedTransactions = await Transaction.find({
@@ -684,18 +684,18 @@ export const getPaymentHistory = async (req, res) => {
       data: {
         originalLoan: {
           ...loan.toObject(),
-          originalAmount: loan.principalPaise / 100,
-          accruedInterest: accruedInterest / 100,
-          outstandingBalance: currentOutstanding / 100
+          originalAmount: loan.principalPaise ,
+          accruedInterest: accruedInterest ,
+          outstandingBalance: currentOutstanding 
         },
         paymentHistory: formattedPaymentHistory,
         relatedTransactions,
         summary: {
-          originalAmount: loan.principalPaise / 100,
-          accruedInterest: accruedInterest / 100,
-          totalPrincipalPaid: loan.totalPrincipalPaid / 100,
-          totalInterestPaid: loan.totalInterestPaid / 100,
-          outstandingBalance: currentOutstanding / 100,
+          originalAmount: loan.principalPaise ,
+          accruedInterest: accruedInterest ,
+          totalPrincipalPaid: loan.totalPrincipalPaid ,
+          totalInterestPaid: loan.totalInterestPaid ,
+          outstandingBalance: currentOutstanding ,
           paymentCount: formattedPaymentHistory.length,
           isCompleted: currentOutstanding <= 0
         }
@@ -737,9 +737,9 @@ export const getOutstandingToCollect = async (req, res) => {
       }
       customerWise[customerId].loans.push({
         ...loan.toObject(),
-        originalAmount: loan.principalPaise / 100,
-        accruedInterest: accruedInterest / 100,
-        outstandingAmount: currentOutstanding / 100
+        originalAmount: loan.principalPaise ,
+        accruedInterest: accruedInterest ,
+        outstandingAmount: currentOutstanding 
       });
       customerWise[customerId].totalOutstanding += currentOutstanding;
       customerWise[customerId].totalInterestPaid += loan.totalInterestPaid;
@@ -748,14 +748,14 @@ export const getOutstandingToCollect = async (req, res) => {
 
     const formattedCustomerWise = Object.values(customerWise).map(item => ({
       ...item,
-      totalOutstanding: item.totalOutstanding / 100,
-      totalInterestPaid: item.totalInterestPaid / 100
+      totalOutstanding: item.totalOutstanding ,
+      totalInterestPaid: item.totalInterestPaid 
     }));
 
     res.json({
       success: true,
       data: {
-        totalToCollect: totalToCollect / 100,
+        totalToCollect: totalToCollect ,
         customerCount: formattedCustomerWise.length,
         loanCount: formattedCustomerWise.reduce((sum, item) => sum + item.loans.length, 0),
         customerWise: formattedCustomerWise
@@ -797,9 +797,9 @@ export const getOutstandingToPay = async (req, res) => {
       }
       customerWise[customerId].loans.push({
         ...loan.toObject(),
-        originalAmount: loan.principalPaise / 100,
-        accruedInterest: accruedInterest / 100,
-        outstandingAmount: currentOutstanding / 100
+        originalAmount: loan.principalPaise ,
+        accruedInterest: accruedInterest ,
+        outstandingAmount: currentOutstanding 
       });
       customerWise[customerId].totalOutstanding += currentOutstanding;
       customerWise[customerId].totalInterestPaid += loan.totalInterestPaid;
@@ -808,14 +808,14 @@ export const getOutstandingToPay = async (req, res) => {
 
     const formattedCustomerWise = Object.values(customerWise).map(item => ({
       ...item,
-      totalOutstanding: item.totalOutstanding / 100,
-      totalInterestPaid: item.totalInterestPaid / 100
+      totalOutstanding: item.totalOutstanding ,
+      totalInterestPaid: item.totalInterestPaid 
     }));
 
     res.json({
       success: true,
       data: {
-        totalToPay: totalToPay / 100,
+        totalToPay: totalToPay ,
         customerCount: formattedCustomerWise.length,
         loanCount: formattedCustomerWise.reduce((sum, item) => sum + item.loans.length, 0),
         customerWise: formattedCustomerWise
@@ -843,9 +843,9 @@ export const getOverallLoanSummary = async (req, res) => {
       const currentOutstanding = loan.getCurrentOutstanding(currentDate);
       const isCompleted = currentOutstanding <= 0 || loan.status === 'CLOSED';
       const entry = loan.loanType === 'GIVEN' ? formattedSummary.given : formattedSummary.taken;
-      entry.totalAmount += loan.principalPaise / 100;
-      entry.totalOutstanding += currentOutstanding / 100;
-      entry.totalInterestPaid += loan.totalInterestPaid / 100;
+      entry.totalAmount += loan.principalPaise ;
+      entry.totalOutstanding += currentOutstanding ;
+      entry.totalInterestPaid += loan.totalInterestPaid ;
       entry.count += 1;
       if (isCompleted) entry.completedCount += 1;
     }
@@ -894,16 +894,16 @@ export const getLoanReminders = async (req, res) => {
         loanId: loan._id,
         customer: loan.customer,
         loanType: loan.loanType,
-        principalAmount: loan.principalPaise / 100,
-        outstandingPrincipal: loan.outstandingPrincipal / 100,
+        principalAmount: loan.principalPaise ,
+        outstandingPrincipal: loan.outstandingPrincipal ,
         interestRate: loan.interestRateMonthlyPct,
         monthsOverdue: paymentStatus.overdueMonths,
-        pendingInterestAmount: paymentStatus.pendingAmount / 100,
-        currentMonthInterest: currentMonthInterest / 100,
+        pendingInterestAmount: paymentStatus.pendingAmount ,
+        currentMonthInterest: currentMonthInterest ,
         nextDueDate: paymentStatus.nextDueDate,
         status: paymentStatus.status,
         lastInterestPayment: loan.lastInterestPaymentDate,
-        reminderMessage: `Dear ${loan.customer.name}, your loan interest of ₹${(currentMonthInterest / 100).toFixed(0)} is ${paymentStatus.isOverdue ? 'overdue' : 'due'}. Outstanding principal: ₹${(loan.outstandingPrincipal / 100).toFixed(0)}`
+        reminderMessage: `Dear ${loan.customer.name}, your loan interest of ₹${(currentMonthInterest ).toFixed(0)} is ${paymentStatus.isOverdue ? 'overdue' : 'due'}. Outstanding principal: ₹${(loan.outstandingPrincipal ).toFixed(0)}`
       };
     });
 
@@ -974,7 +974,7 @@ export const updateInterestRate = async (req, res) => {
       success: true,
       data: {
         ...loan.toObject(),
-        outstandingRupees: loan.getCurrentOutstanding() / 100
+        outstandingRupees: loan.getCurrentOutstanding() 
       },
       message: `Interest rate updated from ${oldRate}% to ${interestRateMonthlyPct}% successfully`
     });

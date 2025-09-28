@@ -91,7 +91,7 @@ const UdhariPaymentModal = ({ isOpen, udhari, onClose, onSuccess }) => {
         // For receiving payments (collecting from customers)
         paymentData = {
           udharId: transactionId,
-          principalPaise: Math.round(amount * 100), // Convert to paise
+          principalPaise: Math.round(amount ), // Convert to paise
           paymentMethod: paymentMethod,
           paymentDate: paymentDate,
           note: paymentNote.trim() || undefined,
@@ -102,7 +102,7 @@ const UdhariPaymentModal = ({ isOpen, udhari, onClose, onSuccess }) => {
         // For making payments (paying to customers)
         paymentData = {
           udharId: transactionId,
-          principalPaise: Math.round(amount * 100), // Convert to paise
+          principalPaise: Math.round(amount ), // Convert to paise
            customerId: udhari?.customer?._id || udhari?.customer?.id,
           transactionId: transactionId,
           amount: amount,
@@ -141,7 +141,7 @@ const UdhariPaymentModal = ({ isOpen, udhari, onClose, onSuccess }) => {
 
   const handleQuickAmount = (percentage) => {
     const outstandingAmount = getOutstandingAmount();
-    const amount = (outstandingAmount * percentage / 100).toFixed(2);
+    const amount = (outstandingAmount * percentage ).toFixed(2);
     setPaymentAmount(amount);
   };
 

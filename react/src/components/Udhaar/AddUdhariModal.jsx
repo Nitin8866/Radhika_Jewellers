@@ -92,7 +92,7 @@ const AddUdharModal = ({ isOpen, onClose, onSuccess }) => {
 
       const udharData = {
         customer: selectedCustomer._id,
-        principalPaise: Math.round(parseFloat(formData.amount) * 100),
+        principalPaise: Math.round(parseFloat(formData.amount) ),
         note: formData.note.trim() || '',
         totalInstallments: parseInt(formData.totalInstallments) || 1,
         dueDate: formData.returnDate || null,

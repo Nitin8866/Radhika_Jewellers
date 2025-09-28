@@ -68,7 +68,7 @@ export const giveUdhar = async (req, res) => {
     const transaction = new Transaction({
       type: 'UDHAR_GIVEN',
       customer,
-      amount: principalPaise / 100, // Store in rupees
+      amount: principalPaise , // Store in rupees
       direction: -1, // outgoing
       description: `Udhar given to ${customerName} - ${note || 'No note'}`,
       relatedDoc: savedUdhar._id,
@@ -78,7 +78,7 @@ export const giveUdhar = async (req, res) => {
       metadata: {
         paymentType: 'DISBURSEMENT',
         paymentMethod,
-        originalUdharAmount: principalPaise / 100,
+        originalUdharAmount: principalPaise ,
         totalInstallments
       }
     });
@@ -91,8 +91,8 @@ export const giveUdhar = async (req, res) => {
       message: 'Udhar given successfully',
       data: {
         ...savedUdhar.toObject(),
-        principalRupees: principalPaise / 100,
-        outstandingRupees: principalPaise / 100,
+        principalRupees: principalPaise ,
+        outstandingRupees: principalPaise ,
         transactionId: savedTransaction._id
       }
     });
@@ -156,7 +156,7 @@ export const takeUdhar = async (req, res) => {
     const transaction = new Transaction({
       type: 'UDHAR_TAKEN',
       customer,
-      amount: principalPaise / 100, // Store in rupees
+      amount: principalPaise , // Store in rupees
       direction: 1, // incoming
       description: `Udhar taken from ${customerName} - ${note || 'No note'}`,
       relatedDoc: savedUdhar._id,
@@ -166,7 +166,7 @@ export const takeUdhar = async (req, res) => {
       metadata: {
         paymentType: 'DISBURSEMENT',
         paymentMethod,
-        originalUdharAmount: principalPaise / 100,
+        originalUdharAmount: principalPaise ,
         totalInstallments
       }
     });
@@ -179,8 +179,8 @@ export const takeUdhar = async (req, res) => {
       message: 'Udhar taken successfully',
       data: {
         ...savedUdhar.toObject(),
-        principalRupees: principalPaise / 100,
-        outstandingRupees: principalPaise / 100,
+        principalRupees: principalPaise ,
+        outstandingRupees: principalPaise ,
         transactionId: savedTransaction._id
       }
     });
@@ -278,7 +278,7 @@ export const receiveUdharPayment = async (req, res) => {
     const transaction = new Transaction({
       type: isFullyPaid ? 'UDHAR_CLOSURE' : 'UDHAR_PAYMENT',
       customer: udhar.customer._id,
-      amount: principalPaise / 100,
+      amount: principalPaise ,
       direction: 1, // incoming
       description: `Principal payment from ${customerName} - ${note || 'Payment received'}`,
       relatedDoc: udhar._id,
@@ -291,7 +291,7 @@ export const receiveUdharPayment = async (req, res) => {
         paymentReference: reference,
         bankTransactionId: transactionId,
         installmentNumber: installmentNumber || udhar.paymentHistory.length,
-        remainingAmount: udhar.outstandingPrincipal / 100,
+        remainingAmount: udhar.outstandingPrincipal ,
         isFullPayment: isFullyPaid
       }
     });
@@ -306,15 +306,15 @@ export const receiveUdharPayment = async (req, res) => {
       message: isFullyPaid ? 'Udhar fully paid and settled!' : 'Payment received successfully',
       data: {
         payment: {
-          principalAmount: principalPaise / 100,
+          principalAmount: principalPaise ,
           date: transactionDate,
           installmentNumber: installmentNumber || udhar.paymentHistory.length,
           note: note || ''
         },
         udharSummary: {
-          originalAmount: udhar.principalPaise / 100,
-          totalPrincipalPaid: totalPaidPrincipal / 100,
-          remainingOutstanding: udhar.outstandingPrincipal / 100,
+          originalAmount: udhar.principalPaise ,
+          totalPrincipalPaid: totalPaidPrincipal ,
+          remainingOutstanding: udhar.outstandingPrincipal ,
           paymentPercentage,
           isFullyPaid,
           totalInstallments: udhar.totalInstallments,
@@ -420,7 +420,7 @@ export const makeUdharPayment = async (req, res) => {
     const transaction = new Transaction({
       type: isFullyPaid ? 'UDHAR_CLOSURE' : 'UDHAR_PAYMENT',
       customer: udhar.customer._id,
-      amount: principalPaise / 100,
+      amount: principalPaise ,
       direction: -1, // outgoing
       description: `Principal payment to ${customerName} - ${note || 'Payment made'}`,
       relatedDoc: udhar._id,
@@ -433,7 +433,7 @@ export const makeUdharPayment = async (req, res) => {
         paymentReference: reference,
         bankTransactionId: transactionId,
         installmentNumber: installmentNumber || udhar.paymentHistory.length,
-        remainingAmount: udhar.outstandingPrincipal / 100,
+        remainingAmount: udhar.outstandingPrincipal ,
         isFullPayment: isFullyPaid
       }
     });
@@ -448,15 +448,15 @@ export const makeUdharPayment = async (req, res) => {
       message: isFullyPaid ? 'Udhar fully paid!' : 'Payment made successfully',
       data: {
         payment: {
-          principalAmount: principalPaise / 100,
+          principalAmount: principalPaise ,
           date: transactionDate,
           installmentNumber: installmentNumber || udhar.paymentHistory.length,
           note: note || ''
         },
         udharSummary: {
-          originalAmount: udhar.principalPaise / 100,
-          totalPrincipalPaid: totalPaidPrincipal / 100,
-          remainingOutstanding: udhar.outstandingPrincipal / 100,
+          originalAmount: udhar.principalPaise ,
+          totalPrincipalPaid: totalPaidPrincipal ,
+          remainingOutstanding: udhar.outstandingPrincipal ,
           paymentPercentage,
           isFullyPaid,
           totalInstallments: udhar.totalInstallments,
@@ -494,16 +494,16 @@ export const getCustomerUdharSummary = async (req, res) => {
         outstandingToCollect += udhar.outstandingPrincipal;
         givenUdhars.push({
           ...udhar.toObject(),
-          originalAmount: udhar.principalPaise / 100,
-          outstandingAmount: udhar.outstandingPrincipal / 100
+          originalAmount: udhar.principalPaise ,
+          outstandingAmount: udhar.outstandingPrincipal 
         });
       } else if (udhar.udharType === 'TAKEN') {
         totalTaken += udhar.principalPaise;
         outstandingToPay += udhar.outstandingPrincipal;
         takenUdhars.push({
           ...udhar.toObject(),
-          originalAmount: udhar.principalPaise / 100,
-          outstandingAmount: udhar.outstandingPrincipal / 100
+          originalAmount: udhar.principalPaise ,
+          outstandingAmount: udhar.outstandingPrincipal 
         });
       }
     });
@@ -521,11 +521,11 @@ export const getCustomerUdharSummary = async (req, res) => {
         success: true,
         data: {
           customer: udhars[0]?.customer,
-          totalGiven: totalGiven / 100,
-          totalTaken: totalTaken / 100,
-          outstandingToCollect: outstandingToCollect / 100,
-          outstandingToPay: outstandingToPay / 100,
-          netAmount: netAmount / 100,
+          totalGiven: totalGiven ,
+          totalTaken: totalTaken ,
+          outstandingToCollect: outstandingToCollect ,
+          outstandingToPay: outstandingToPay ,
+          netAmount: netAmount ,
           udhars: {
             given: [],
             taken: [],
@@ -538,11 +538,11 @@ export const getCustomerUdharSummary = async (req, res) => {
 
     const summary = {
       customer: udhars[0]?.customer,
-      totalGiven: totalGiven / 100,
-      totalTaken: totalTaken / 100,
-      outstandingToCollect: outstandingToCollect / 100,
-      outstandingToPay: outstandingToPay / 100,
-      netAmount: netAmount / 100,
+      totalGiven: totalGiven ,
+      totalTaken: totalTaken ,
+      outstandingToCollect: outstandingToCollect ,
+      outstandingToPay: outstandingToPay ,
+      netAmount: netAmount ,
       udhars: {
         given: givenUdhars,
         taken: takenUdhars,
@@ -578,7 +578,7 @@ export const getPaymentHistory = async (req, res) => {
 
     // Format payment history
     const formattedPaymentHistory = (originalUdhar.paymentHistory || []).map(payment => ({
-      principalAmount: payment.principalAmount / 100,
+      principalAmount: payment.principalAmount ,
       date: payment.date,
       installmentNumber: payment.installmentNumber,
       note: payment.note,
@@ -597,15 +597,15 @@ export const getPaymentHistory = async (req, res) => {
       data: {
         originalUdhar: {
           ...originalUdhar.toObject(),
-          originalAmount: originalUdhar.principalPaise / 100,
-          outstandingBalance: originalUdhar.outstandingPrincipal / 100
+          originalAmount: originalUdhar.principalPaise ,
+          outstandingBalance: originalUdhar.outstandingPrincipal 
         },
         paymentHistory: formattedPaymentHistory,
         relatedTransactions,
         summary: {
-          originalAmount: originalUdhar.principalPaise / 100,
-          totalPrincipalPaid: (originalUdhar.principalPaise - originalUdhar.outstandingPrincipal) / 100,
-          outstandingBalance: originalUdhar.outstandingPrincipal / 100,
+          originalAmount: originalUdhar.principalPaise ,
+          totalPrincipalPaid: (originalUdhar.principalPaise - originalUdhar.outstandingPrincipal) ,
+          outstandingBalance: originalUdhar.outstandingPrincipal ,
           paymentCount: formattedPaymentHistory.length,
           isCompleted: originalUdhar.status === 'CLOSED'
         }
@@ -643,8 +643,8 @@ export const getOutstandingToCollect = async (req, res) => {
       }
       customerWise[customerId].udhars.push({
         ...udhar.toObject(),
-        originalAmount: udhar.principalPaise / 100,
-        outstandingAmount: udhar.outstandingPrincipal / 100
+        originalAmount: udhar.principalPaise ,
+        outstandingAmount: udhar.outstandingPrincipal 
       });
       customerWise[customerId].totalOutstanding += udhar.outstandingPrincipal;
       totalToCollect += udhar.outstandingPrincipal;
@@ -658,15 +658,15 @@ export const getOutstandingToCollect = async (req, res) => {
       const netOutstanding = item.totalOutstanding - totalTakenOutstanding;
       return {
         ...item,
-        totalOutstanding: item.totalOutstanding / 100,
-        netOutstanding: netOutstanding / 100
+        totalOutstanding: item.totalOutstanding ,
+        netOutstanding: netOutstanding 
       };
     }).filter(item => item.netOutstanding > 0.01); // Only include customers with positive net balance
 
     res.json({
       success: true,
       data: {
-        totalToCollect: totalToCollect / 100,
+        totalToCollect: totalToCollect ,
         customerCount: formattedCustomerWise.length,
         udharCount: outstandingUdhars.length,
         customerWise: formattedCustomerWise
@@ -704,8 +704,8 @@ export const getOutstandingToPay = async (req, res) => {
       }
       customerWise[customerId].udhars.push({
         ...udhar.toObject(),
-        originalAmount: udhar.principalPaise / 100,
-        outstandingAmount: udhar.outstandingPrincipal / 100
+        originalAmount: udhar.principalPaise ,
+        outstandingAmount: udhar.outstandingPrincipal 
       });
       customerWise[customerId].totalOutstanding += udhar.outstandingPrincipal;
       totalToPay += udhar.outstandingPrincipal;
@@ -719,15 +719,15 @@ export const getOutstandingToPay = async (req, res) => {
       const netOutstanding = totalGivenOutstanding - item.totalOutstanding;
       return {
         ...item,
-        totalOutstanding: item.totalOutstanding / 100,
-        netOutstanding: netOutstanding / 100
+        totalOutstanding: item.totalOutstanding ,
+        netOutstanding: netOutstanding 
       };
     }).filter(item => item.netOutstanding < -0.01); // Only include customers with negative net balance
 
     res.json({
       success: true,
       data: {
-        totalToPay: totalToPay / 100,
+        totalToPay: totalToPay ,
         customerCount: formattedCustomerWise.length,
         udharCount: outstandingUdhars.length,
         customerWise: formattedCustomerWise
@@ -767,15 +767,15 @@ export const getOverallUdharSummary = async (req, res) => {
     summary.forEach(item => {
       if (item._id === 'GIVEN') {
         formattedSummary.given = {
-          totalAmount: item.totalAmount / 100,
-          totalOutstanding: item.totalOutstanding / 100,
+          totalAmount: item.totalAmount ,
+          totalOutstanding: item.totalOutstanding ,
           count: item.count,
           completedCount: item.completedCount
         };
       } else if (item._id === 'TAKEN') {
         formattedSummary.taken = {
-          totalAmount: item.totalAmount / 100,
-          totalOutstanding: item.totalOutstanding / 100,
+          totalAmount: item.totalAmount ,
+          totalOutstanding: item.totalOutstanding ,
           count: item.count,
           completedCount: item.completedCount
         };
@@ -821,13 +821,13 @@ export const getUdharReminders = async (req, res) => {
         udharId: udhar._id,
         customer: udhar.customer,
         udharType: udhar.udharType,
-        principalAmount: udhar.principalPaise / 100,
-        outstandingPrincipal: udhar.outstandingPrincipal / 100,
+        principalAmount: udhar.principalPaise ,
+        outstandingPrincipal: udhar.outstandingPrincipal ,
         daysOverdue,
         status,
         dueDate: udhar.dueDate,
         lastPaymentDate: udhar.lastPaymentDate,
-        reminderMessage: `Dear ${udhar.customer.name}, your udhar of ₹${(udhar.outstandingPrincipal / 100).toFixed(2)} is ${status.toLowerCase()} since ${udhar.dueDate.toISOString().split('T')[0]}.`
+        reminderMessage: `Dear ${udhar.customer.name}, your udhar of ₹${(udhar.outstandingPrincipal ).toFixed(2)} is ${status.toLowerCase()} since ${udhar.dueDate.toISOString().split('T')[0]}.`
       };
     });
 

@@ -135,7 +135,7 @@ const AddLoanModal = ({ isOpen, onClose, onSuccess }) => {
 
       const loanData = {
         customer: selectedCustomer._id,
-        principalPaise: Math.round(parseFloat(formData.amount) ), // Changed from * 100 to * 10000
+        principalPaise: Math.round(parseFloat(formData.amount) ), // Changed from  to 00
         interestRateMonthlyPct: parseFloat(formData.interestRate),
         note: formData.note.trim() || '',
         totalInstallments: parseInt(formData.totalInstallments) || 1,
