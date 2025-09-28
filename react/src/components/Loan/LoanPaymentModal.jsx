@@ -59,8 +59,8 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
       return;
     }
 
-    const principalPaise = principalAmount ? parseInt(parseFloat(principalAmount) * 100) : 0;
-    const interestPaise = interestAmount ? parseInt(parseFloat(interestAmount) * 100) : 0;
+    const principalPaise = principalAmount ? parseInt(parseFloat(principalAmount) ) : 0;
+    const interestPaise = interestAmount ? parseInt(parseFloat(interestAmount) ) : 0;
 
     if (principalPaise <= 0 && interestPaise <= 0) {
       setError('Please enter at least one payment amount');

@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { ExpenseContext } from '../context/ExpenseContext.jsx';
-import { Menu, Bell, LogOut, Plus } from 'lucide-react';
+import { Menu, Bell, LogOut, Plus, Download } from 'lucide-react';
 import CustomerSearch from './CustomerSearch';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationBell from './NotificationBell.jsx';
@@ -10,17 +10,19 @@ import NotificationBell from './NotificationBell.jsx';
 const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
+  const { logout, token } = useContext(AuthContext); // Assume token is available
   const { setShowAddExpense, udhaarData } = useContext(ExpenseContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLogoutPopupOpen, setIsLogoutPopupOpen] = useState(false);
   const [hasPendingUdhaars, setHasPendingUdhaars] = useState(false);
   const [pendingUdhaarsCount, setPendingUdhaarsCount] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
 
   // Check for pending udhaars (net !== 0)
   useEffect(() => {
     if (udhaarData && Array.isArray(udhaarData)) {
-      const pending = udhaarData.filter((udhari) => Math.abs(udhari.net) > 0.01); // Match Udhaar.jsx filtering
+      const pending = udhaarData.filter((udhari) => Math.abs(udhari.net) > 0.01);
       setPendingUdhaarsCount(pending.length);
       setHasPendingUdhaars(pending.length > 0);
     } else {
@@ -60,6 +62,35 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClic
     setShowAddExpense(true);
     if (onAddExpenseClick) {
       onAddExpenseClick();
+    }
+  };
+
+  // Handle Export to CSV button click
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      const response = await fetch('http://localhost:3000/api/export-all-csv', {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Include if backend requires auth
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch CSV');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'daily-data.csv';
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      setExportError(error.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -177,7 +208,20 @@ const Header = ({ toggleSidebar, isMobile, onNotificationClick, onAddExpenseClic
               </button>
             )}
 
-           <NotificationBell />
+            {/* Export to CSV Button */}
+            <button
+              onClick={handleExportCsv}
+              disabled={isExporting}
+              className={`p-2 sm:px-4 sm:py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium sm:font-semibold shadow-md hover:shadow-lg hover:from-green-700 hover:to-teal-700 transform transition-all duration-200 flex items-center gap-1 sm:gap-2 ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Download className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="sm:inline">{isExporting ? 'Exporting...' : 'Export to CSV'}</span>
+            </button>
+            {exportError && (
+              <p className="text-red-500 text-sm">{exportError}</p>
+            )}
+
+            <NotificationBell />
             {/* User Profile and Logout */}
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center">

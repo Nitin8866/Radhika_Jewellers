@@ -1,6 +1,6 @@
 # Node modules
 node_modules/
-
+exports/
 # Logs
 logs
 *.log
@@ -8,6 +8,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.csv
 
 # Runtime data
 pids

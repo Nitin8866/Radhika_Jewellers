@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, DollarSign, CheckCircle, Clock } from 'lucide-react';
+import { AlertCircle, DollarSign, CheckCircle, Clock  } from 'lucide-react';
 import ApiService from '../services/api';
+import { FileText } from 'lucide-react';
 
 const UdhariTab = ({ customerId }) => {
   const [customerSummary, setCustomerSummary] = useState(null);

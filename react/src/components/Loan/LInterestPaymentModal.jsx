@@ -57,7 +57,7 @@ const LInterestPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
       return;
     }
 
-    const expectedInterest = getPendingInterestAmount() * 100; // Convert to paise
+    const expectedInterest = getPendingInterestAmount() ; // Convert to paise
     
 
     try {
@@ -67,7 +67,7 @@ const LInterestPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
       const interestData = {
         loanId: loan._id,
         principalPaise: 0,
-        interestPaise: parseInt(parseFloat(interestAmount) * 100),
+        interestPaise: parseInt(parseFloat(interestAmount) ),
         note: paymentNote.trim() || undefined,
         paymentDate,
         paymentMethod,
