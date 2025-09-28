@@ -516,7 +516,7 @@ const LoanTab = ({ customerId, onRefresh }) => {
             )}
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredLoans.map(loan => (
               <LoanCard key={loan._id || loan.id} loan={loan} />
             ))}

@@ -489,7 +489,7 @@ const UdhariTab = ({ customerId, onRefresh }) => {
             )}
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredUdharis.map(udhari => (
               <UdhariCard key={udhari._id || udhari.id} udhari={udhari} />
             ))}
