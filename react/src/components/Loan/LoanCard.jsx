@@ -1,6 +1,5 @@
-// LoanCard.jsx
 import React from 'react';
-import { DollarSign, Percent, FileText } from 'lucide-react';
+import { DollarSign, Percent, FileText, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 
 const LoanCard = ({ loan, type, onView, onPrincipalPayment, onInterestPayment }) => {
   const formatCurrency = (amount) => {
@@ -20,60 +19,84 @@ const LoanCard = ({ loan, type, onView, onPrincipalPayment, onInterestPayment })
   const isReceivable = type === 'receivable';
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md ${
-            isReceivable ? 'bg-gradient-to-br from-red-500 to-red-600' : 'bg-gradient-to-br from-green-500 to-green-600'
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+      {/* Header Section */}
+      <div className={`p-4 ${isReceivable ? 'bg-gradient-to-r from-red-50 to-rose-50' : 'bg-gradient-to-r from-green-50 to-emerald-50'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center font-semibold text-white shadow-sm ${
+            isReceivable ? 'bg-red-600' : 'bg-green-600'
           }`}>
-            <span className="text-white text-sm font-bold">{getInitials(customer.name)}</span>
+            {getInitials(customer.name)}
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">{customer.name}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-slate-900 truncate">{customer.name}</h3>
             <p className="text-sm text-slate-600">{customer.phone}</p>
           </div>
+          <div className={`p-2 rounded-lg ${isReceivable ? 'bg-red-100' : 'bg-green-100'}`}>
+            {isReceivable ? (
+              <TrendingUp size={18} className="text-red-600" />
+            ) : (
+              <TrendingDown size={18} className="text-green-600" />
+            )}
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-slate-600">Total Outstanding</p>
-          <p className={`text-xl font-bold ${isReceivable ? 'text-red-600' : 'text-green-600'}`}>
+      </div>
+
+      {/* Outstanding Amount Section */}
+      <div className="px-4 py-5 border-b border-slate-100">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Outstanding</span>
+          <span className={`text-2xl font-bold ${isReceivable ? 'text-red-600' : 'text-green-600'}`}>
             {formatCurrency(loan.totalOutstanding)}
-          </p>
+          </span>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-sm text-slate-600">Loans</p>
-          <p className="text-sm text-slate-900">{loan.loans.length}</p>
-        </div>
-        <div>
-          <p className="text-sm text-slate-600">Interest Due</p>
-          <p className="text-sm text-purple-600">{formatCurrency(loan.interestDue)}</p>
+
+      {/* Details Grid */}
+      <div className="px-4 py-4 bg-slate-50">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <FileText size={14} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Active Loans</p>
+              <p className="text-sm font-semibold text-slate-900">{loan.loans.length}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+                      </div>
         </div>
       </div>
-      <div className="mt-4 flex gap-2">
+
+      {/* Action Buttons */}
+      <div className="p-4 space-y-2 bg-white">
         <button
           onClick={onView}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="w-full px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium text-sm flex items-center justify-center gap-2 border border-slate-200"
         >
-          <FileText size={16} className="inline mr-2" />
-          View
+          <FileText size={16} />
+          View Details
         </button>
-        <button
-          onClick={onPrincipalPayment}
-          className={`flex-1 px-4 py-2 text-white rounded-lg ${
-            isReceivable ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-          }`}
-        >
-          <DollarSign size={16} className="inline mr-2" />
-          {isReceivable ? 'Receive' : 'Pay'} Principal
-        </button>
-        <button
-          onClick={onInterestPayment}
-          className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        >
-          <Percent size={16} className="inline mr-2" />
-          Interest
-        </button>
+        
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={onPrincipalPayment}
+            className={`px-3 py-2.5 text-white rounded-lg transition-all font-medium text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow ${
+              isReceivable ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+            }`}
+          >
+            <CreditCard size={15} />
+            Principal
+          </button>
+          <button
+            onClick={onInterestPayment}
+            className="px-3 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-medium text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow"
+          >
+            <Percent size={15} />
+            Interest
+          </button>
+        </div>
       </div>
     </div>
   );
