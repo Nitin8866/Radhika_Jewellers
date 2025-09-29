@@ -182,18 +182,18 @@ loanSchema.index({ outstandingPrincipal: 1, isActive: 1 });
 
 // Virtual for amount in rupees
 loanSchema.virtual('principalRupees').get(function() {
-  return this.principalPaise / 100;
+  return this.principalPaise ;
 });
 
 loanSchema.virtual('outstandingRupees').get(function() {
-  return this.outstandingPrincipal / 100;
+  return this.outstandingPrincipal ;
 });
 
 // Virtual for payment completion percentage
 loanSchema.virtual('completionPercentage').get(function() {
   if (this.principalPaise === 0) return 0;
   const paidAmount = this.principalPaise - this.outstandingPrincipal;
-  return Math.round((paidAmount / this.principalPaise) * 100);
+  return Math.round((paidAmount / this.principalPaise) );
 });
 
 // Virtual for monthly interest amount
@@ -372,17 +372,17 @@ loanSchema.methods.getPaymentSummary = function() {
   const totalPaid = this.principalPaise - this.outstandingPrincipal;
   const accruedInterest = this.getAccruedInterest();
   return {
-    originalAmount: this.principalPaise / 100,
-    totalPrincipalPaid: this.totalPrincipalPaid / 100,
-    totalInterestPaid: this.totalInterestPaid / 100,
-    outstandingBalance: this.getCurrentOutstanding() / 100,
+    originalAmount: this.principalPaise ,
+    totalPrincipalPaid: this.totalPrincipalPaid ,
+    totalInterestPaid: this.totalInterestPaid ,
+    outstandingBalance: this.getCurrentOutstanding() ,
     completionPercentage: this.completionPercentage,
     paymentCount: this.paymentHistory.length,
     lastPrincipalPaymentDate: this.lastPrincipalPaymentDate,
     lastInterestPaymentDate: this.lastInterestPaymentDate,
     isCompleted: this.status === 'CLOSED',
-    monthlyInterest: this.monthlyInterest / 100,
-    accruedInterest: accruedInterest / 100,
+    monthlyInterest: this.monthlyInterest ,
+    accruedInterest: accruedInterest ,
     nextInterestDueDate: this.nextInterestDueDate
   };
 };

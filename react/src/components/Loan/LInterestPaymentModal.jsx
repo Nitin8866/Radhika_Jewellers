@@ -37,7 +37,7 @@ const LInterestPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
   const getMonthlyInterest = () => {
     const outstanding = loan?.outstandingPrincipal || 0;
     const interestRate = loan?.interestRateMonthlyPct || 0;
-    return (outstanding * interestRate) / 100 / 100; // Convert paise to rupees
+    return (outstanding * interestRate)  / 100; // Convert paise to rupees
   };
 
   const getPendingInterestAmount = () => {

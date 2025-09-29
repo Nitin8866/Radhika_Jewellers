@@ -50,7 +50,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
 
   const getMonthlyInterest = (loan) => {
     if (!loan?.outstandingPrincipal || !loan?.interestRateMonthlyPct) return 0;
-    return (loan.outstandingPrincipal * loan.interestRateMonthlyPct) / 100 / 100; // Convert paise to rupees
+    return (loan.outstandingPrincipal * loan.interestRateMonthlyPct)  ; // Convert paise to rupees
   };
 
   const handlePrincipalPayment = () => {
@@ -170,7 +170,8 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                         <div>
                           <p className="text-sm font-medium text-slate-600">Monthly Interest</p>
                           <p className="text-2xl font-bold text-purple-600">
-                            {formatCurrency(getMonthlyInterest(selectedLoan))}
+                            {selectedLoan.monthlyInterest}
+
                           </p>
                         </div>
                       </div>
@@ -187,7 +188,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                         <div>
                           <p className="text-sm font-medium text-slate-600">Total Paid</p>
                           <p className="text-2xl font-bold text-blue-600">
-                            {formatCurrency(selectedLoan.totalPrincipalPaid / 100)}
+                            {formatCurrency(selectedLoan.totalPrincipalPaid )}
                           </p>
                         </div>
                       </div>
@@ -265,18 +266,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                       )}
                     </div>
 
-                    <div className="mt-6">
-                      <div className="flex justify-between text-sm text-slate-600 mb-2">
-                        <span>Payment Progress</span>
-                        <span>{selectedLoan.completionPercentage}%</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-3">
-                        <div 
-                          className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(selectedLoan.completionPercentage, 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                    
                   </div>
 
                   <div>
@@ -305,7 +295,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                                     <div>
                                       <p className="text-sm text-slate-600">Principal</p>
                                       <p className="font-medium text-green-600">
-                                        {formatCurrency(payment.principalAmount / 100)}
+                                        {formatCurrency(payment.principalAmount )}
                                       </p>
                                     </div>
                                   )}
@@ -313,7 +303,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                                     <div>
                                       <p className="text-sm text-slate-600">Interest</p>
                                       <p className="font-medium text-purple-600">
-                                        {formatCurrency(payment.interestAmount / 100)}
+                                        {formatCurrency(payment.interestAmount )}
                                       </p>
                                     </div>
                                   )}

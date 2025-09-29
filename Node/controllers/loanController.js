@@ -15,97 +15,6 @@ const getCustomerName = async (customerId) => {
 };
 
 // Give Loan (Lend money to someone)
-export const giveLoan = async (req, res) => {
-  try {
-    console.log('=== GIVE LOAN ===');
-    console.log('Request body:', req.body);
-
-    const { 
-      customer, 
-      principalPaise, 
-      interestRateMonthlyPct, 
-      note, 
-      totalInstallments = 1, 
-      dueDate, 
-      paymentMethod = 'CASH',
-      takenDate
-    } = req.body;
-
-    if (!customer || !principalPaise || !interestRateMonthlyPct) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Customer, principal amount, and interest rate are required' 
-      });
-    }
-
-    if (principalPaise <= 0 || interestRateMonthlyPct < 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Principal amount must be greater than zero and interest rate cannot be negative' 
-      });
-    }
-
-    const loan = new Loan({
-      customer,
-      loanType: 'GIVEN',
-      principalPaise,
-      direction: -1,
-      sourceType: 'LOAN',
-      note,
-      outstandingPrincipal: principalPaise,
-      totalInstallments,
-      interestRateMonthlyPct,
-      dueDate: dueDate ? new Date(dueDate) : null,
-      takenDate: takenDate ? new Date(takenDate) : new Date(),
-      paymentHistory: [],
-      paymentMethod,
-      status: 'ACTIVE',
-      isActive: true
-    });
-
-    const savedLoan = await loan.save();
-    await savedLoan.updateNextInterestDueDate();
-
-    const customerName = await getCustomerName(customer);
-    const transaction = new Transaction({
-      type: 'LOAN_GIVEN',
-      customer,
-      amount: principalPaise,
-      direction: -1,
-      description: `Loan given to ${customerName} - ${note || 'No note'}`,
-      relatedDoc: savedLoan._id,
-      relatedModel: 'Loan',
-      category: 'EXPENSE',
-      date: new Date(takenDate || Date.now()),
-      metadata: {
-        paymentType: 'DISBURSEMENT',
-        paymentMethod,
-        originalLoanAmount: principalPaise,
-        interestRate: interestRateMonthlyPct,
-        totalInstallments
-      }
-    });
-
-    const savedTransaction = await transaction.save();
-    console.log('Transaction record saved:', savedTransaction._id);
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'Loan given successfully',
-      data: {
-        ...savedLoan.toObject(),
-        principalRupees: principalPaise ,
-        outstandingRupees: principalPaise ,
-        transactionId: savedTransaction._id
-      }
-    });
-  } catch (error) {
-    console.error('Error in giveLoan:', error);
-    res.status(400).json({ success: false, error: error.message });
-  }
-};
-
-// Take Loan (Borrow money from someone)
 export const takeLoan = async (req, res) => {
   try {
     console.log('=== TAKE LOAN ===');
@@ -136,14 +45,18 @@ export const takeLoan = async (req, res) => {
       });
     }
 
+    // Calculate first day's interest (assuming monthly rate, divide by 30 for daily)
+    const firstDayInterestPaise = Math.round((principalPaise * (interestRateMonthlyPct / 100)) / 30);
+    const initialOutstanding = principalPaise + firstDayInterestPaise;
+
     const loan = new Loan({
       customer,
       loanType: 'TAKEN',
       principalPaise,
-      direction: 1,
+      direction: -1,
       sourceType: 'LOAN',
       note,
-      outstandingPrincipal: principalPaise,
+      outstandingPrincipal: initialOutstanding,
       totalInstallments,
       interestRateMonthlyPct,
       dueDate: dueDate ? new Date(dueDate) : null,
@@ -162,8 +75,8 @@ export const takeLoan = async (req, res) => {
       type: 'LOAN_TAKEN',
       customer,
       amount: principalPaise,
-      direction: 1,
-      description: `Loan taken from ${customerName} - ${note || 'No note'}`,
+      direction: -1,
+      description: `Loan take from ${customerName} - ${note || 'No note'} (First day interest: ₹${(firstDayInterestPaise/100).toFixed(2)})`,
       relatedDoc: savedLoan._id,
       relatedModel: 'Loan',
       category: 'INCOME',
@@ -172,6 +85,7 @@ export const takeLoan = async (req, res) => {
         paymentType: 'DISBURSEMENT',
         paymentMethod,
         originalLoanAmount: principalPaise,
+        firstDayInterest: firstDayInterestPaise,
         interestRate: interestRateMonthlyPct,
         totalInstallments
       }
@@ -186,16 +100,113 @@ export const takeLoan = async (req, res) => {
       data: {
         ...savedLoan.toObject(),
         principalRupees: principalPaise ,
-        outstandingRupees: principalPaise ,
+        outstandingRupees: initialOutstanding ,
+        firstDayInterestRupees: firstDayInterestPaise ,
         transactionId: savedTransaction._id
       }
     });
   } catch (error) {
-    console.error('Error in takeLoan:', error);
+    console.error('Error in giveLoan:', error);
     res.status(400).json({ success: false, error: error.message });
   }
 };
 
+// Take Loan (Borrow money from someone)
+export const giveLoan = async (req, res) => {
+  try {
+    console.log('=== GIVE LOAN ===');
+    console.log('Request body:', req.body);
+
+    const { 
+      customer, 
+      principalPaise, 
+      interestRateMonthlyPct, 
+      note, 
+      totalInstallments = 1, 
+      dueDate, 
+      paymentMethod = 'CASH',
+      takenDate
+    } = req.body;
+
+    if (!customer || !principalPaise || !interestRateMonthlyPct) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Customer, principal amount, and interest rate are required' 
+      });
+    }
+
+    if (principalPaise <= 0 || interestRateMonthlyPct < 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Principal amount must be greater than zero and interest rate cannot be negative' 
+      });
+    }
+
+    // Calculate first day's interest (assuming monthly rate, divide by 30 for daily)
+    const firstDayInterestPaise = Math.round((principalPaise * (interestRateMonthlyPct / 100)) / 30);
+    const initialOutstanding = principalPaise + firstDayInterestPaise;
+
+    const loan = new Loan({
+      customer,
+      loanType: 'GIVEN',
+      principalPaise,
+      direction: -1,
+      sourceType: 'LOAN',
+      note,
+      outstandingPrincipal: initialOutstanding,
+      totalInstallments,
+      interestRateMonthlyPct,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      takenDate: takenDate ? new Date(takenDate) : new Date(),
+      paymentHistory: [],
+      paymentMethod,
+      status: 'ACTIVE',
+      isActive: true
+    });
+
+    const savedLoan = await loan.save();
+    await savedLoan.updateNextInterestDueDate();
+
+    const customerName = await getCustomerName(customer);
+    const transaction = new Transaction({
+      type: 'LOAN_GIVEN',
+      customer,
+      amount: principalPaise,
+      direction: -1,
+      description: `Loan given to ${customerName} - ${note || 'No note'} (First day interest: ₹${(firstDayInterestPaise/100).toFixed(2)})`,
+      relatedDoc: savedLoan._id,
+      relatedModel: 'Loan',
+      category: 'EXPENSE',
+      date: new Date(takenDate || Date.now()),
+      metadata: {
+        paymentType: 'DISBURSEMENT',
+        paymentMethod,
+        originalLoanAmount: principalPaise,
+        firstDayInterest: firstDayInterestPaise,
+        interestRate: interestRateMonthlyPct,
+        totalInstallments
+      }
+    });
+
+    const savedTransaction = await transaction.save();
+    console.log('Transaction record saved:', savedTransaction._id);
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Loan given successfully',
+      data: {
+        ...savedLoan.toObject(),
+        principalRupees: principalPaise ,
+        outstandingRupees: initialOutstanding ,
+        firstDayInterestRupees: firstDayInterestPaise ,
+        transactionId: savedTransaction._id
+      }
+    });
+  } catch (error) {
+    console.error('Error in giveLoan:', error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
 // Receive Loan Payment (Principal + Interest)
 export const receiveLoanPayment = async (req, res) => {
   try {
@@ -589,12 +600,12 @@ export const getCustomerLoanSummary = async (req, res) => {
         outstandingRupees: currentOutstanding 
       };
 
-      if (loan.loanType = 'GIVEN') {
+      if (loan.loanType === 'GIVEN') {
         totalGiven += loan.principalPaise;
         outstandingToCollect += currentOutstanding;
         totalInterestPaid += loan.totalInterestPaid;
         givenLoans.push(loanData);
-      } else if (loan.loanType = 'TAKEN') {
+      } else if (loan.loanType === 'TAKEN') {
         totalTaken += loan.principalPaise;
         outstandingToPay += currentOutstanding;
         totalInterestPaid += loan.totalInterestPaid;

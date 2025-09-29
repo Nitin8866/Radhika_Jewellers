@@ -48,7 +48,7 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
   const getMonthlyInterest = () => {
     const outstanding = loan?.outstandingPrincipal || 0;
     const interestRate = loan?.interestRateMonthlyPct || 0;
-    return (outstanding * interestRate) / 100 / 100;
+    return (outstanding * interestRate)  / 100;
   };
 
   const handlePayment = async (e) => {
@@ -68,7 +68,7 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
     }
 
     const outstandingAmount = getOutstandingAmount();
-    if (principalPaise > 0 && principalPaise / 100 > outstandingAmount) {
+    if (principalPaise > 0 && principalPaise  > outstandingAmount) {
       setError(`Principal payment cannot exceed outstanding amount of ${formatCurrency(outstandingAmount)}`);
       return;
     }
