@@ -28,14 +28,17 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
       console.log('Raw transaction data:', txnResponse.data);
 
       // Map transactions
-      const mappedTransactions = (txnResponse.success && txnResponse.data ? txnResponse.data : []).map(txn => ({
-        ...txn,
-        type: txn.type || 'TRANSACTION',
-        category: txn.category || (txn.amount >= 0 ? 'INCOME' : 'EXPENSE'),
-        date: txn.date ? new Date(txn.date).toISOString() : new Date().toISOString(),
-        customer: txn.customer || null,
-        description: txn.description || ''
-      }));
+      const mappedTransactions = (txnResponse.success && txnResponse.data ? txnResponse.data : []).map(txn => {
+        const dateObj = txn.createdAt ? new Date(txn.createdAt) : (txn.date ? new Date(txn.date) : null);
+        return {
+          ...txn,
+          type: txn.type || 'TRANSACTION',
+          category: txn.category || (txn.amount >= 0 ? 'INCOME' : 'EXPENSE'),
+          date: dateObj && !isNaN(dateObj.getTime()) ? dateObj.toISOString() : null,
+          customer: txn.customer || null,
+          description: txn.description || ''
+        };
+      });
 
       // Sort by date
       const combined = mappedTransactions
@@ -63,16 +66,17 @@ const RecentTransactions = ({ onEdit, onDelete, refreshTrigger }) => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString || isNaN(new Date(dateString).getTime())) {
-      console.warn(`Invalid dateString: ${dateString}. Returning fallback date.`);
-      return new Date().toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+    if (!dateString) {
+      return 'Unknown';
     }
-    return new Date(dateString).toLocaleDateString('en-IN', {
+
+    const dateObj = new Date(dateString);
+    if (isNaN(dateObj.getTime())) {
+      console.warn(`Invalid dateString: ${dateString}. Returning 'Unknown'.`);
+      return 'Unknown';
+    }
+
+    return dateObj.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       hour: '2-digit',
