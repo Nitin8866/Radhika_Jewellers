@@ -59,376 +59,392 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/business-expenses", bussinessExpenseRoutes);
 
 // Enhanced CSV export endpoint with append functionality
+// Complete rewrite of CSV export endpoint with proper data formatting
 app.get("/api/export-all-csv", async (req, res) => {
   try {
-    // Define the CSV file path
-    const csvFilePath = path.join(exportsDir, "daily-data.csv");
-
-    // Define today's date range in IST
-    const today = moment().tz('Asia/Kolkata').startOf('day').toDate();
-    const tomorrow = moment(today).add(1, 'day').toDate();
-    const dateHeader = `Data for ${moment(today).format('YYYY-MM-DD')}`;
-
-    // Log timezone and date range for debugging
-    console.log(`Exporting data for ${dateHeader}`);
-    console.log(`Query date range: ${today.toISOString()} to ${tomorrow.toISOString()}`);
-
-    // Set headers for CSV download
+    const timestamp = moment().tz('Asia/Kolkata').format('YYYY-MM-DD_HH-mm-ss');
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", 'attachment; filename="daily-data.csv"');
-
-    // Initialize CSV stream for response
-    const csvStream = csv.format({ headers: true, quoteColumns: true });
-    csvStream.pipe(res);
-
-    // Initialize file append stream
-    const fileStream = fs.createWriteStream(csvFilePath, { flags: 'a' });
-    const appendCsvStream = csv.format({ headers: false, quoteColumns: true });
-    appendCsvStream.pipe(fileStream);
-
-    // Write date header and separator if appending
-    if (fs.existsSync(csvFilePath)) {
-      csvStream.write({ Header: '--- Append Separator ---' });
-      appendCsvStream.write({ Header: '--- Append Separator ---' });
-    }
-    csvStream.write({ Header: dateHeader });
-    appendCsvStream.write({ Header: dateHeader });
+    res.setHeader("Content-Disposition", `attachment; filename="business-data_${timestamp}.csv"`);
 
     const collections = [
-      { name: "customers", modelName: "Customer" },
-      { name: "goldloans", modelName: "GoldLoan" },
-      { name: "silverloans", modelName: "SilverLoan" },
-      { name: "loans", modelName: "Loan" },
-      { name: "udhars", modelName: "Udhar" },
-      { name: "transactions", modelName: "Transaction" },
-      { name: "businessExpenses", modelName: "BusinessExpense" },
-      { name: "goldtransactions", modelName: "GoldTransaction" },
-      { name: "silvertransactions", modelName: "SilverTransaction" },
+      { name: "customers", modelName: "Customer", populateFields: [] },
+      { name: "goldloans", modelName: "GoldLoan", populateFields: ['customer'] },
+      { name: "silverloans", modelName: "SilverLoan", populateFields: ['customer'] },
+      { name: "loans", modelName: "Loan", populateFields: ['customer'] },
+      { name: "udhars", modelName: "Udhar", populateFields: ['customer'] },
+      { name: "transactions", modelName: "Transaction", populateFields: ['customer'] },
+      { name: "businessExpenses", modelName: "BusinessExpense", populateFields: [] },
+      { name: "goldtransactions", modelName: "GoldTransaction", populateFields: ['customer'] },
+      { name: "silvertransactions", modelName: "SilverTransaction", populateFields: ['customer'] },
     ];
 
-    // Helper function to format dates
-    const formatDate = (date) => {
-      return date ? moment(date).tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss') : '';
-    };
+    const csvStream = csv.format({ headers: true });
+    csvStream.pipe(res);
 
-    // Helper function to format amounts (convert paise to rupees)
-    const formatAmount = (amount) => {
-      return amount != null ? (amount / 100).toFixed(2) : '';
-    };
-
-    // Iterate through collections
-    for (const { name, modelName } of collections) {
+    // Export each collection
+    for (const { name, modelName, populateFields } of collections) {
       try {
         const model = mongoose.models[modelName];
         if (!model) {
-          console.warn(`Model ${modelName} not found for collection ${name}`);
-          csvStream.write({ Header: `--- ${name} (skipped: model not found) ---` });
-          appendCsvStream.write({ Header: `--- ${name} (skipped: model not found) ---` });
+          console.warn(`Model ${modelName} not found`);
           continue;
         }
 
-        // Write collection header
-        csvStream.write({ Header: `--- ${name} ---` });
-        appendCsvStream.write({ Header: `--- ${name} ---` });
-
-        // Define headers based on collection
-        let headers = {};
-        let rowMapper = (doc) => doc;
-
-        switch (name) {
-          case 'customers':
-            headers = {
-              id: 'ID',
-              name: 'Name',
-              phone: 'Phone',
-              adhaarNumber: 'Aadhaar Number',
-              email: 'Email',
-              'address.street': 'Street',
-              'address.city': 'City',
-              'address.state': 'State',
-              'address.pincode': 'Pincode',
-              totalAmountTakenFromJewellers: 'Amount Taken From Jewellers (₹)',
-              totalAmountTakenByUs: 'Amount Taken By Us (₹)',
-              status: 'Status',
-              createdAt: 'Created At',
-              updatedAt: 'Updated At'
-            };
-            rowMapper = (doc) => ({
-              id: doc._id.toString(),
-              name: doc.name || '',
-              phone: doc.phone || '',
-              adhaarNumber: doc.adhaarNumber || '',
-              email: doc.email || '',
-              'address.street': doc.address?.street || '',
-              'address.city': doc.address?.city || '',
-              'address.state': doc.address?.state || '',
-              'address.pincode': doc.address?.pincode || '',
-              totalAmountTakenFromJewellers: formatAmount(doc.totalAmountTakenFromJewellers),
-              totalAmountTakenByUs: formatAmount(doc.totalAmountTakenByUs),
-              status: doc.status || '',
-              createdAt: formatDate(doc.createdAt),
-              updatedAt: formatDate(doc.updatedAt)
-            });
-            break;
-
-          case 'goldloans':
-          case 'silverloans':
-            headers = {
-              id: 'ID',
-              customer: 'Customer ID',
-              totalLoanAmount: 'Total Loan Amount (₹)',
-              currentPrincipal: 'Current Principal (₹)',
-              outstandingAmount: 'Outstanding Amount (₹)',
-              interestRateMonthlyPct: 'Monthly Interest Rate (%)',
-              status: 'Status',
-              startDate: 'Start Date',
-              dueDate: 'Due Date',
-              closureDate: 'Closure Date',
-              items: 'Items',
-              createdAt: 'Created At'
-            };
-            rowMapper = (doc) => ({
-              id: doc._id.toString(),
-              customer: doc.customer?.toString() || '',
-              totalLoanAmount: formatAmount(doc.totalLoanAmount),
-              currentPrincipal: formatAmount(doc.currentPrincipal),
-              outstandingAmount: formatAmount(doc.outstandingAmount),
-              interestRateMonthlyPct: doc.interestRateMonthlyPct?.toFixed(2) || '',
-              status: doc.status || '',
-              startDate: formatDate(doc.startDate),
-              dueDate: formatDate(doc.dueDate),
-              closureDate: formatDate(doc.closureDate),
-              items: doc.items?.map(item => 
-                `${item.name} (${item.weightGram}g, ${item.purityK}K)`
-              ).join('; ') || '',
-              createdAt: formatDate(doc.createdAt)
-            });
-            break;
-
-          case 'loans':
-            headers = {
-              id: 'ID',
-              customer: 'Customer ID',
-              loanType: 'Loan Type',
-              principalPaise: 'Principal Amount (₹)',
-              outstandingPrincipal: 'Outstanding Principal (₹)',
-              interestRateMonthlyPct: 'Monthly Interest Rate (%)',
-              status: 'Status',
-              takenDate: 'Taken Date',
-              dueDate: 'Due Date',
-              createdAt: 'Created At'
-            };
-            rowMapper = (doc) => ({
-              id: doc._id.toString(),
-              customer: doc.customer?.toString() || '',
-              loanType: doc.loanType || '',
-              principalPaise: formatAmount(doc.principalPaise),
-              outstandingPrincipal: formatAmount(doc.outstandingPrincipal),
-              interestRateMonthlyPct: doc.interestRateMonthlyPct?.toFixed(2) || '',
-              status: doc.status || '',
-              takenDate: formatDate(doc.takenDate),
-              dueDate: formatDate(doc.dueDate),
-              createdAt: formatDate(doc.createdAt)
-            });
-            break;
-
-          case 'udhars':
-            headers = {
-              id: 'ID',
-              customer: 'Customer ID',
-              udharType: 'Udhar Type',
-              principalPaise: 'Principal Amount (₹)',
-              outstandingPrincipal: 'Outstanding Principal (₹)',
-              status: 'Status',
-              takenDate: 'Taken Date',
-              dueDate: 'Due Date',
-              createdAt: 'Created At'
-            };
-            rowMapper = (doc) => ({
-              id: doc._id.toString(),
-              customer: doc.customer?.toString() || '',
-              udharType: doc.udharType || '',
-              principalPaise: formatAmount(doc.principalPaise),
-              outstandingPrincipal: formatAmount(doc.outstandingPrincipal),
-              status: doc.status || '',
-              takenDate: formatDate(doc.takenDate),
-              dueDate: formatDate(doc.dueDate),
-              createdAt: formatDate(doc.createdAt)
-            });
-            break;
-
-          case 'transactions':
-            headers = {
-              id: 'ID',
-              type: 'Type',
-              customer: 'Customer ID',
-              amount: 'Amount (₹)',
-              direction: 'Direction',
-              description: 'Description',
-              date: 'Date',
-              category: 'Category',
-              relatedDoc: 'Related Document ID',
-              relatedModel: 'Related Model',
-              createdAt: 'Created At'
-            };
-            rowMapper = (doc) => ({
-              id: doc._id.toString(),
-              type: doc.type || '',
-              customer: doc.customer?.toString() || '',
-              amount: formatAmount(doc.amount),
-              direction: doc.transactionDirection || doc.direction || '',
-              description: doc.description || '',
-              date: formatDate(doc.date),
-              category: doc.category || '',
-              relatedDoc: doc.relatedDoc?.toString() || '',
-              relatedModel: doc.relatedModel || '',
-              createdAt: formatDate(doc.createdAt)
-            });
-            break;
-
-          case 'businessExpenses':
-            headers = {
-              id: 'ID',
-              referenceNumber: 'Reference Number',
-              category: 'Category',
-              title: 'Title',
-              description: 'Description',
-              'vendor.name': 'Vendor Name',
-              grossAmount: 'Gross Amount (₹)',
-              netAmount: 'Net Amount (₹)',
-              paidAmount: 'Paid Amount (₹)',
-              pendingAmount: 'Pending Amount (₹)',
-              expenseDate: 'Expense Date',
-              dueDate: 'Due Date',
-              createdAt: 'Created At'
-            };
-            rowMapper = (doc) => ({
-              id: doc._id.toString(),
-              referenceNumber: doc.referenceNumber || '',
-              category: doc.category || '',
-              title: doc.title || '',
-              description: doc.description || '',
-              'vendor.name': doc.vendor?.name || '',
-              grossAmount: formatAmount(doc.grossAmount),
-              netAmount: formatAmount(doc.netAmount),
-              paidAmount: formatAmount(doc.paidAmount),
-              pendingAmount: formatAmount(doc.pendingAmount),
-              expenseDate: formatDate(doc.expenseDate),
-              dueDate: formatDate(doc.dueDate),
-              createdAt: formatDate(doc.createdAt)
-            });
-            break;
-
-          case 'goldtransactions':
-          case 'silvertransactions':
-            headers = {
-              id: 'ID',
-              transactionType: 'Transaction Type',
-              customer: 'Customer ID',
-              'supplier.name': 'Supplier Name',
-              totalWeight: 'Total Weight (g)',
-              totalAmount: 'Total Amount (₹)',
-              advanceAmount: 'Advance Amount (₹)',
-              remainingAmount: 'Remaining Amount (₹)',
-              paymentMode: 'Payment Mode',
-              invoiceNumber: 'Invoice Number',
-              date: 'Date',
-              createdAt: 'Created At',
-              items: 'Items'
-            };
-            rowMapper = (doc) => ({
-              id: doc._id.toString(),
-              transactionType: doc.transactionType || '',
-              customer: doc.customer?.toString() || '',
-              'supplier.name': doc.supplier?.name || '',
-              totalWeight: doc.totalWeight?.toFixed(2) || '',
-              totalAmount: formatAmount(doc.totalAmount),
-              advanceAmount: formatAmount(doc.advanceAmount),
-              remainingAmount: formatAmount(doc.remainingAmount),
-              paymentMode: doc.paymentMode || '',
-              invoiceNumber: doc.invoiceNumber || '',
-              date: formatDate(doc.date),
-              createdAt: formatDate(doc.createdAt),
-              items: doc.items?.map(item => 
-                `${item.itemName} (${item.weight}g, ${item.purity})`
-              ).join('; ') || ''
-            });
-            break;
-
-          default:
-            headers = { id: 'ID' };
-            rowMapper = (doc) => ({ id: doc._id.toString() });
-        }
-
-        // Write headers for the collection
-        csvStream.write(headers);
-        appendCsvStream.write(headers);
-
-        // Fetch documents created today
-        const query = {
-          createdAt: {
-            $gte: today,
-            $lt: tomorrow,
-          },
-        };
-        const cursor = name === 'customers' 
-          ? model.find(query).lean().cursor() 
-          : model.find(query).populate('customer', 'name phone').lean().cursor();
-
-        // Stream documents
-        let count = 0;
-        for await (const doc of cursor) {
-          const row = rowMapper(doc);
-          csvStream.write(row);
-          appendCsvStream.write(row);
-          count++;
-        }
-
-        // If no documents found, try fetching all data (for debugging)
-        if (count === 0) {
-          console.log(`No documents found in ${name} for ${dateHeader}. Trying all data...`);
-          const allDocsCursor = name === 'customers' 
-            ? model.find().lean().cursor() 
-            : model.find().populate('customer', 'name phone').lean().cursor();
-          let allCount = 0;
-          for await (const doc of allDocsCursor) {
-            allCount++;
+        // Build query with population
+        let query = model.find({});
+        populateFields.forEach(field => {
+          if (field === 'customer') {
+            query = query.populate('customer', 'name phone email city state');
           }
-          console.log(`Total documents in ${name}: ${allCount}`);
-          csvStream.write({ Header: `No data for ${name} on ${dateHeader} (Total documents: ${allCount})` });
-          appendCsvStream.write({ Header: `No data for ${name} on ${dateHeader} (Total documents: ${allCount})` });
+        });
+
+        const documents = await query.lean().exec();
+        console.log(`Found ${documents.length} documents in ${name}`);
+
+        if (documents.length === 0) {
+          csvStream.write({
+            Collection: name.toUpperCase(),
+            Status: 'NO_DATA',
+            Count: 0,
+            Message: 'No records found',
+            Field1: '',
+            Field2: '',
+            Field3: '',
+            Field4: '',
+            Field5: ''
+          });
+          continue;
         }
 
-        // Add an empty row after each collection
-        csvStream.write({});
-        appendCsvStream.write({});
-        console.log(`Exported ${count} documents from ${name} for ${dateHeader}`);
-      } catch (collectionError) {
-        console.error(`Error exporting collection ${name}:`, collectionError);
-        csvStream.write({ Header: `--- ${name} (skipped: ${collectionError.message}) ---` });
-        appendCsvStream.write({ Header: `--- ${name} (skipped: ${collectionError.message}) ---` });
-        csvStream.write({});
-        appendCsvStream.write({});
+        // Export based on collection type
+        switch(name) {
+          case 'customers':
+            await exportCustomers(csvStream, documents);
+            break;
+          case 'goldloans':
+            await exportGoldLoans(csvStream, documents);
+            break;
+          case 'silverloans':
+            await exportSilverLoans(csvStream, documents);
+            break;
+          case 'loans':
+            await exportLoans(csvStream, documents);
+            break;
+          case 'udhars':
+            await exportUdhars(csvStream, documents);
+            break;
+          case 'transactions':
+            await exportTransactions(csvStream, documents);
+            break;
+          case 'businessExpenses':
+            await exportBusinessExpenses(csvStream, documents);
+            break;
+          case 'goldtransactions':
+            await exportGoldTransactions(csvStream, documents);
+            break;
+          case 'silvertransactions':
+            await exportSilverTransactions(csvStream, documents);
+            break;
+        }
+
+      } catch (error) {
+        console.error(`Error exporting ${name}:`, error);
+        csvStream.write({
+          Collection: name.toUpperCase(),
+          Status: 'ERROR',
+          Error: error.message,
+          Field1: '', Field2: '', Field3: '', Field4: '', Field5: ''
+        });
       }
     }
 
-    // End streams
     csvStream.end();
-    appendCsvStream.end();
-
-    // Handle file stream errors
-    fileStream.on('error', (error) => {
-      console.error(`Error writing to file ${csvFilePath}:`, error);
-    });
-    fileStream.on('finish', () => {
-      console.log(`Data appended to ${csvFilePath}`);
-    });
   } catch (error) {
-    console.error("Export endpoint error:", error);
-    res.status(500).json({ success: false, error: `Failed to export data: ${error.message}` });
+    console.error("Export error:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
+// Helper functions for each collection type
+async function exportCustomers(csvStream, customers) {
+  // Header
+  csvStream.write({
+    Collection: '--- CUSTOMERS ---',
+    Field1: 'ID',
+    Field2: 'Name', 
+    Field3: 'Phone',
+    Field4: 'Email',
+    Field5: 'City'
+  });
+
+  customers.forEach(customer => {
+    csvStream.write({
+      Collection: 'CUSTOMER',
+      Field1: customer._id?.toString() || '',
+      Field2: customer.name || '',
+      Field3: customer.phone || '',
+      Field4: customer.email || '',
+      Field5: customer.city || '',
+      Field6: customer.state || '',
+      Field7: customer.pincode || '',
+      Field8: customer.adhaarNumber || '',
+      Field9: moment(customer.createdAt).format('YYYY-MM-DD HH:mm:ss'),
+      Field10: customer.status || ''
+    });
+  });
+}
+
+async function exportGoldLoans(csvStream, goldLoans) {
+  csvStream.write({
+    Collection: '--- GOLD LOANS ---',
+    Field1: 'ID',
+    Field2: 'Customer Name',
+    Field3: 'Customer Phone', 
+    Field4: 'Loan Amount',
+    Field5: 'Interest Rate'
+  });
+
+  goldLoans.forEach(loan => {
+    const customerName = loan.customer?.name || 'Unknown Customer';
+    const customerPhone = loan.customer?.phone || '';
+    
+    csvStream.write({
+      Collection: 'GOLDLOAN',
+      Field1: loan._id?.toString() || '',
+      Field2: customerName,
+      Field3: customerPhone,
+      Field4: loan.totalLoanAmount || 0,
+      Field5: loan.interestRateMonthlyPct || 0,
+      Field6: loan.currentPrincipal || 0,
+      Field7: loan.outstandingAmount || 0,
+      Field8: loan.status || '',
+      Field9: moment(loan.startDate).format('YYYY-MM-DD'),
+      Field10: loan.items?.length || 0,
+      Field11: loan.items?.reduce((sum, item) => sum + (item.weightGram || 0), 0) || 0,
+      Field12: moment(loan.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
+
+async function exportSilverLoans(csvStream, silverLoans) {
+  csvStream.write({
+    Collection: '--- SILVER LOANS ---',
+    Field1: 'ID',
+    Field2: 'Customer Name',
+    Field3: 'Customer Phone',
+    Field4: 'Loan Amount', 
+    Field5: 'Interest Rate'
+  });
+
+  silverLoans.forEach(loan => {
+    const customerName = loan.customer?.name || 'Unknown Customer';
+    const customerPhone = loan.customer?.phone || '';
+    
+    csvStream.write({
+      Collection: 'SILVERLOAN',
+      Field1: loan._id?.toString() || '',
+      Field2: customerName,
+      Field3: customerPhone,
+      Field4: loan.totalLoanAmount || 0,
+      Field5: loan.interestRateMonthlyPct || 0,
+      Field6: loan.currentPrincipal || 0,
+      Field7: loan.outstandingAmount || 0,
+      Field8: loan.status || '',
+      Field9: moment(loan.startDate).format('YYYY-MM-DD'),
+      Field10: loan.items?.length || 0,
+      Field11: loan.items?.reduce((sum, item) => sum + (item.weightGram || 0), 0) || 0,
+      Field12: moment(loan.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
+
+async function exportLoans(csvStream, loans) {
+  csvStream.write({
+    Collection: '--- LOANS ---',
+    Field1: 'ID',
+    Field2: 'Customer Name',
+    Field3: 'Customer Phone',
+    Field4: 'Type',
+    Field5: 'Principal Amount'
+  });
+
+  loans.forEach(loan => {
+    const customerName = loan.customer?.name || 'Unknown Customer';
+    const customerPhone = loan.customer?.phone || '';
+    
+    csvStream.write({
+      Collection: 'LOAN',
+      Field1: loan._id?.toString() || '',
+      Field2: customerName,
+      Field3: customerPhone,
+      Field4: loan.loanType || '',
+      Field5: (loan.principalPaise ) || 0,
+      Field6: (loan.outstandingPrincipal ) || 0,
+      Field7: loan.interestRateMonthlyPct || 0,
+      Field8: loan.status || '',
+      Field9: moment(loan.takenDate).format('YYYY-MM-DD'),
+      Field10: (loan.totalPrincipalPaid ) || 0,
+      Field11: (loan.totalInterestPaid ) || 0,
+      Field12: moment(loan.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
+
+async function exportUdhars(csvStream, udhars) {
+  csvStream.write({
+    Collection: '--- UDHARS ---',
+    Field1: 'ID',
+    Field2: 'Customer Name',
+    Field3: 'Customer Phone',
+    Field4: 'Type',
+    Field5: 'Principal Amount'
+  });
+
+  udhars.forEach(udhar => {
+    const customerName = udhar.customer?.name || 'Unknown Customer';
+    const customerPhone = udhar.customer?.phone || '';
+    
+    csvStream.write({
+      Collection: 'UDHAR',
+      Field1: udhar._id?.toString() || '',
+      Field2: customerName,
+      Field3: customerPhone,
+      Field4: udhar.udharType || '',
+      Field5: (udhar.principalPaise ) || 0,
+      Field6: (udhar.outstandingPrincipal ) || 0,
+      Field7: udhar.status || '',
+      Field8: moment(udhar.takenDate).format('YYYY-MM-DD'),
+      Field9: udhar.paymentHistory?.length || 0,
+      Field10: udhar.totalInstallments || 0,
+      Field11: udhar.paidInstallments || 0,
+      Field12: moment(udhar.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
+
+async function exportTransactions(csvStream, transactions) {
+  csvStream.write({
+    Collection: '--- TRANSACTIONS ---',
+    Field1: 'ID',
+    Field2: 'Type',
+    Field3: 'Customer Name',
+    Field4: 'Amount',
+    Field5: 'Direction'
+  });
+
+  transactions.forEach(transaction => {
+    const customerName = transaction.customer?.name || 'No Customer';
+    
+    csvStream.write({
+      Collection: 'TRANSACTION',
+      Field1: transaction._id?.toString() || '',
+      Field2: transaction.type || '',
+      Field3: customerName,
+      Field4: transaction.amount || 0,
+      Field5: transaction.direction || 0,
+      Field6: transaction.description || '',
+      Field7: transaction.category || '',
+      Field8: moment(transaction.date).format('YYYY-MM-DD'),
+      Field9: transaction.metadata?.paymentType || '',
+      Field10: transaction.metadata?.paymentMethod || '',
+      Field11: transaction.relatedModel || '',
+      Field12: moment(transaction.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
+
+async function exportBusinessExpenses(csvStream, expenses) {
+  csvStream.write({
+    Collection: '--- BUSINESS EXPENSES ---',
+    Field1: 'ID',
+    Field2: 'Reference Number',
+    Field3: 'Category',
+    Field4: 'Title',
+    Field5: 'Gross Amount'
+  });
+
+  expenses.forEach(expense => {
+    csvStream.write({
+      Collection: 'EXPENSE',
+      Field1: expense._id?.toString() || '',
+      Field2: expense.referenceNumber || '',
+      Field3: expense.category || '',
+      Field4: expense.title || '',
+      Field5: (expense.grossAmount ) || 0,
+      Field6: (expense.netAmount ) || 0,
+      Field7: expense.vendor?.name || '',
+      Field8: moment(expense.expenseDate).format('YYYY-MM-DD'),
+      Field9: expense.paymentMethod || '',
+      Field10: (expense.paidAmount ) || 0,
+      Field11: (expense.pendingAmount ) || 0,
+      Field12: moment(expense.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
+
+async function exportGoldTransactions(csvStream, transactions) {
+  csvStream.write({
+    Collection: '--- GOLD TRANSACTIONS ---',
+    Field1: 'ID',
+    Field2: 'Type',
+    Field3: 'Customer Name',
+    Field4: 'Total Amount',
+    Field5: 'Total Weight'
+  });
+
+  transactions.forEach(transaction => {
+    const customerName = transaction.customer?.name || 'No Customer';
+    
+    csvStream.write({
+      Collection: 'GOLDTRANSACTION',
+      Field1: transaction._id?.toString() || '',
+      Field2: transaction.transactionType || '',
+      Field3: customerName,
+      Field4: (transaction.totalAmount ) || 0,
+      Field5: transaction.totalWeight || 0,
+      Field6: transaction.invoiceNumber || '',
+      Field7: moment(transaction.date).format('YYYY-MM-DD'),
+      Field8: transaction.paymentMode || '',
+      Field9: (transaction.advanceAmount ) || 0,
+      Field10: (transaction.remainingAmount ) || 0,
+      Field11: transaction.items?.length || 0,
+      Field12: moment(transaction.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
+
+async function exportSilverTransactions(csvStream, transactions) {
+  csvStream.write({
+    Collection: '--- SILVER TRANSACTIONS ---',
+    Field1: 'ID',
+    Field2: 'Type',
+    Field3: 'Customer Name', 
+    Field4: 'Total Amount',
+    Field5: 'Total Weight'
+  });
+
+  transactions.forEach(transaction => {
+    const customerName = transaction.customer?.name || 'No Customer';
+    
+    csvStream.write({
+      Collection: 'SILVERTRANSACTION',
+      Field1: transaction._id?.toString() || '',
+      Field2: transaction.transactionType || '',
+      Field3: customerName,
+      Field4: (transaction.totalAmount ) || 0,
+      Field5: transaction.totalWeight || 0,
+      Field6: transaction.invoiceNumber || '',
+      Field7: moment(transaction.date).format('YYYY-MM-DD'),
+      Field8: transaction.paymentMode || '',
+      Field9: (transaction.advanceAmount ) || 0,
+      Field10: (transaction.remainingAmount ) || 0,
+      Field11: transaction.items?.length || 0,
+      Field12: moment(transaction.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    });
+  });
+}
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
