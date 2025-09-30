@@ -53,10 +53,10 @@ const GoldTransactionTab = ({ customerId, onRefresh }) => {
         setTransactions(response.data || []);
         if (response.stats) {
           setSummary({
-            totalBuyAmount: (response.stats.buy?.totalSaleAmount || 0) / 100,
+            totalBuyAmount: (response.stats.buy?.totalSaleAmount || 0) ,
             totalBuyWeight: response.stats.buy?.totalWeight || 0,
             totalBuyTransactions: response.stats.buy?.totalTransactions || 0,
-            totalSellAmount: (response.stats.sell?.totalSaleAmount || 0) / 100,
+            totalSellAmount: (response.stats.sell?.totalSaleAmount || 0) ,
             totalSellWeight: response.stats.sell?.totalWeight || 0,
             totalSellTransactions: response.stats.sell?.totalTransactions || 0
           });

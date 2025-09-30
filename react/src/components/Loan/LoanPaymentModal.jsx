@@ -48,7 +48,7 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
   const getMonthlyInterest = () => {
     const outstanding = loan?.outstandingPrincipal || 0;
     const interestRate = loan?.interestRateMonthlyPct || 0;
-    return (outstanding * interestRate)  / 100;
+    return (outstanding * interestRate) / 100; // Convert paise to rupees
   };
 
   const handlePayment = async (e) => {
@@ -59,8 +59,8 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
       return;
     }
 
-    const principalPaise = principalAmount ? parseInt(parseFloat(principalAmount) ) : 0;
-    const interestPaise = interestAmount ? parseInt(parseFloat(interestAmount) ) : 0;
+    const principalPaise = principalAmount ? parseInt(parseFloat(principalAmount) * 100) : 0;
+    const interestPaise = interestAmount ? parseInt(parseFloat(interestAmount) * 100) : 0;
 
     if (principalPaise <= 0 && interestPaise <= 0) {
       setError('Please enter at least one payment amount');
@@ -68,7 +68,7 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
     }
 
     const outstandingAmount = getOutstandingAmount();
-    if (principalPaise > 0 && principalPaise  > outstandingAmount) {
+    if (principalPaise > 0 && principalPaise / 100 > outstandingAmount) {
       setError(`Principal payment cannot exceed outstanding amount of ${formatCurrency(outstandingAmount)}`);
       return;
     }
@@ -159,7 +159,7 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Outstanding Principal</p>
-                <p className="text-lg font-semibold text-slate-800">{formatCurrency(loan.outstandingAmount)}</p>
+                <p className="text-lg font-semibold text-slate-800">{formatCurrency(outstandingAmount)}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Monthly Interest ({loan.interestRateMonthlyPct}%)</p>
@@ -269,7 +269,7 @@ const LoanPaymentModal = ({ isOpen, loan, onClose, onSuccess }) => {
                 <div className="flex justify-between text-sm mt-2">
                   <span className="text-slate-600 font-medium">Remaining Principal:</span>
                   <span className="font-semibold text-amber-700">
-                    {formatCurrency(Math.max(0, outstandingAmount - (parseFloat(principalAmount || 0) + parseFloat(interestAmount || 0))))}
+                    {formatCurrency(Math.max(0, outstandingAmount - parseFloat(principalAmount || 0)))}
                   </span>
                 </div>
               )}

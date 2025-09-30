@@ -1,4 +1,3 @@
-// Loan.jsx (page)
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
@@ -84,7 +83,8 @@ const Loan = () => {
     setSelectedLoan(loan);
     setShowDetailModal(true);
   };
-const handlePrincipalPayment = (loan) => {
+
+  const handlePrincipalPayment = (loan) => {
     if (loan && loan._id) {
       setSelectedLoan(loan);
       setShowPaymentModal(true);
@@ -209,17 +209,17 @@ const handlePrincipalPayment = (loan) => {
 
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1">
-              <CustomerSearch
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                onCustomerSelect={(customer) => {
-                  console.log("Selected customer:", customer);
-                }}
-                onCreateCustomer={() => {
-                  console.log("Create new customer clicked");
-                }}
-              />
-            </div>
+            <CustomerSearch
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              onCustomerSelect={(customer) => {
+                console.log("Selected customer:", customer);
+              }}
+              onCreateCustomer={() => {
+                console.log("Create new customer clicked");
+              }}
+            />
+          </div>
           <button
             onClick={loadLoans}
             className="p-3 border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
@@ -298,8 +298,6 @@ const handlePrincipalPayment = (loan) => {
                               loan={loan}
                               type="receivable"
                               onView={() => handleViewLoan(loan)}
-                              onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                              onInterestPayment={() => handleInterestPayment(loan.loans[0])}
                             />
                           </div>
                         ))}
@@ -322,8 +320,6 @@ const handlePrincipalPayment = (loan) => {
                               loan={loan}
                               type="payable"
                               onView={() => handleViewLoan(loan)}
-                              onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                              onInterestPayment={() => handleInterestPayment(loan.loans[0])}
                             />
                           </div>
                         ))}
@@ -358,8 +354,6 @@ const handlePrincipalPayment = (loan) => {
                             loan={loan}
                             type="receivable"
                             onView={() => handleViewLoan(loan)}
-                            onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                            onInterestPayment={() => handleInterestPayment(loan.loans[0])}
                           />
                         </div>
                       ))}
@@ -384,8 +378,6 @@ const handlePrincipalPayment = (loan) => {
                             loan={loan}
                             type="payable"
                             onView={() => handleViewLoan(loan)}
-                            onPrincipalPayment={() => handlePrincipalPayment(loan.loans[0])}
-                            onInterestPayment={() => handleInterestPayment(loan.loans[0])}
                           />
                         </div>
                       ))}
@@ -414,13 +406,13 @@ const handlePrincipalPayment = (loan) => {
           loanData={selectedLoan}
           loanType={selectedLoan?.type}
           onClose={() => setShowDetailModal(false)}
-          onPrincipalPayment={() => {
+          onPrincipalPayment={(loan) => {
             setShowDetailModal(false);
-            handlePrincipalPayment(selectedLoan?.loans[0]);
+            handlePrincipalPayment(loan);
           }}
-          onInterestPayment={() => {
+          onInterestPayment={(loan) => {
             setShowDetailModal(false);
-            handleInterestPayment(selectedLoan?.loans[0]);
+            handleInterestPayment(loan);
           }}
         />
 

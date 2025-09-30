@@ -1,7 +1,7 @@
 import React from 'react';
 import { DollarSign, Percent, FileText, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 
-const LoanCard = ({ loan, type, onView, onPrincipalPayment, onInterestPayment }) => {
+const LoanCard = ({ loan, type, onView }) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -17,6 +17,9 @@ const LoanCard = ({ loan, type, onView, onPrincipalPayment, onInterestPayment })
 
   const customer = loan.customer || {};
   const isReceivable = type === 'receivable';
+  // Calculate total principal and outstanding for all loans
+  const totalPrincipal = loan.loans.reduce((sum, l) => sum + l.principalRupees, 0);
+  const totalOutstanding = loan.loans.reduce((sum, l) => sum + l.outstandingRupees, 0);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -47,7 +50,7 @@ const LoanCard = ({ loan, type, onView, onPrincipalPayment, onInterestPayment })
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Outstanding</span>
           <span className={`text-2xl font-bold ${isReceivable ? 'text-red-600' : 'text-green-600'}`}>
-            {formatCurrency(loan.totalOutstanding)}
+            {formatCurrency(totalOutstanding)}
           </span>
         </div>
       </div>
@@ -65,7 +68,14 @@ const LoanCard = ({ loan, type, onView, onPrincipalPayment, onInterestPayment })
             </div>
           </div>
           <div className="flex items-center gap-2">
-                      </div>
+            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <DollarSign size={14} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Total Principal</p>
+              <p className="text-sm font-semibold text-slate-900">{formatCurrency(totalPrincipal)}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -78,25 +88,6 @@ const LoanCard = ({ loan, type, onView, onPrincipalPayment, onInterestPayment })
           <FileText size={16} />
           View Details
         </button>
-        
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={onPrincipalPayment}
-            className={`px-3 py-2.5 text-white rounded-lg transition-all font-medium text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow ${
-              isReceivable ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-            }`}
-          >
-            <CreditCard size={15} />
-            Principal
-          </button>
-          <button
-            onClick={onInterestPayment}
-            className="px-3 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-medium text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow"
-          >
-            <Percent size={15} />
-            Interest
-          </button>
-        </div>
       </div>
     </div>
   );

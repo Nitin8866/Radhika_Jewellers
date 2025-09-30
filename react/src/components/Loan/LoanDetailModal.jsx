@@ -1,4 +1,3 @@
-// LoanDetailModal.jsx
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Percent, Phone, FileText, DollarSign, CheckCircle, Clock } from 'lucide-react';
 
@@ -50,7 +49,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
 
   const getMonthlyInterest = (loan) => {
     if (!loan?.outstandingPrincipal || !loan?.interestRateMonthlyPct) return 0;
-    return (loan.outstandingPrincipal * loan.interestRateMonthlyPct)  ; // Convert paise to rupees
+    return (loan.outstandingPrincipal * loan.interestRateMonthlyPct) / 100; // Convert paise to rupees
   };
 
   const handlePrincipalPayment = () => {
@@ -170,8 +169,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                         <div>
                           <p className="text-sm font-medium text-slate-600">Monthly Interest</p>
                           <p className="text-2xl font-bold text-purple-600">
-                            {selectedLoan.monthlyInterest}
-
+                            {formatCurrency(getMonthlyInterest(selectedLoan))}
                           </p>
                         </div>
                       </div>
@@ -188,12 +186,12 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                         <div>
                           <p className="text-sm font-medium text-slate-600">Total Paid</p>
                           <p className="text-2xl font-bold text-blue-600">
-                            {formatCurrency(selectedLoan.totalPrincipalPaid )}
+                            {formatCurrency(selectedLoan.totalPrincipalPaid + selectedLoan.totalInterestPaid)}
                           </p>
                         </div>
                       </div>
                       <p className="text-sm text-slate-500">
-                        Principal payments made
+                        Principal + Interest payments made
                       </p>
                     </div>
 
@@ -265,8 +263,6 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                         </div>
                       )}
                     </div>
-
-                    
                   </div>
 
                   <div>
@@ -295,7 +291,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                                     <div>
                                       <p className="text-sm text-slate-600">Principal</p>
                                       <p className="font-medium text-green-600">
-                                        {formatCurrency(payment.principalAmount )}
+                                        {formatCurrency(payment.principalAmount / 100)}
                                       </p>
                                     </div>
                                   )}
@@ -303,7 +299,7 @@ const LoanDetailModal = ({ isOpen, loanData, loanType, onClose, onPrincipalPayme
                                     <div>
                                       <p className="text-sm text-slate-600">Interest</p>
                                       <p className="font-medium text-purple-600">
-                                        {formatCurrency(payment.interestAmount )}
+                                        {formatCurrency(payment.interestAmount / 100)}
                                       </p>
                                     </div>
                                   )}
