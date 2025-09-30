@@ -45,18 +45,14 @@ export const takeLoan = async (req, res) => {
       });
     }
 
-    // Calculate first day's interest (assuming monthly rate, divide by 30 for daily)
-    const firstDayInterestPaise = Math.round((principalPaise * (interestRateMonthlyPct / 100)) / 30);
-    const initialOutstanding = principalPaise + firstDayInterestPaise;
-
     const loan = new Loan({
       customer,
       loanType: 'TAKEN',
       principalPaise,
-      direction: -1,
+      direction: 1,
       sourceType: 'LOAN',
       note,
-      outstandingPrincipal: initialOutstanding,
+      outstandingPrincipal: principalPaise,
       totalInstallments,
       interestRateMonthlyPct,
       dueDate: dueDate ? new Date(dueDate) : null,
@@ -75,8 +71,8 @@ export const takeLoan = async (req, res) => {
       type: 'LOAN_TAKEN',
       customer,
       amount: principalPaise,
-      direction: -1,
-      description: `Loan take from ${customerName} - ${note || 'No note'} (First day interest: ₹${(firstDayInterestPaise/100).toFixed(2)})`,
+      direction: 1,
+      description: `Loan taken from ${customerName} - ${note || 'No note'}`,
       relatedDoc: savedLoan._id,
       relatedModel: 'Loan',
       category: 'INCOME',
@@ -85,7 +81,6 @@ export const takeLoan = async (req, res) => {
         paymentType: 'DISBURSEMENT',
         paymentMethod,
         originalLoanAmount: principalPaise,
-        firstDayInterest: firstDayInterestPaise,
         interestRate: interestRateMonthlyPct,
         totalInstallments
       }
@@ -100,13 +95,12 @@ export const takeLoan = async (req, res) => {
       data: {
         ...savedLoan.toObject(),
         principalRupees: principalPaise ,
-        outstandingRupees: initialOutstanding ,
-        firstDayInterestRupees: firstDayInterestPaise ,
+        outstandingRupees: principalPaise ,
         transactionId: savedTransaction._id
       }
     });
   } catch (error) {
-    console.error('Error in giveLoan:', error);
+    console.error('Error in takeLoan:', error);
     res.status(400).json({ success: false, error: error.message });
   }
 };
