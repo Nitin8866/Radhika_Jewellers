@@ -30,8 +30,7 @@ const silverTransactionItemSchema = new mongoose.Schema({
   wastage: { 
     type: Number, 
     default: 0, // Wastage percentage
-    min: 0,
-    max: 100
+   
   },
   taxAmount: { 
     type: Number, 
@@ -55,7 +54,7 @@ const silverTransactionItemSchema = new mongoose.Schema({
 // Calculate total amount for individual item (same logic for silver)
 silverTransactionItemSchema.methods.calculateItemTotal = function() {
   const baseAmount = this.weight * this.ratePerGram;
-  const wastageAmount = (baseAmount * this.wastage) / 100;
+  const wastageAmount =  this.wastage ;
   const subtotal = baseAmount + wastageAmount + this.makingCharges;
   const total = subtotal + this.taxAmount;
   return Math.round(total);

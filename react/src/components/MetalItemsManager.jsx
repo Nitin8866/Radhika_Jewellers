@@ -7,7 +7,8 @@ const MetalItemsManager = ({
   metalType = "Gold", 
   currentPrices = null,
   errors = {},
-  loading = false 
+  loading = false,
+  interest = 0 // New prop for interest amount
 }) => {
   const [localItems, setLocalItems] = useState(items);
 
@@ -46,7 +47,7 @@ const MetalItemsManager = ({
     weight: '',
     ratePerGram: '',
     makingCharges: '0',
-    wastage: '0',
+    wastage: '0', // Now represents amount in ₹
     taxAmount: '0',
     photos: [],
     hallmarkNumber: '',
@@ -87,12 +88,12 @@ const MetalItemsManager = ({
     const weight = parseFloat(item.weight) || 0;
     const rate = parseFloat(item.ratePerGram) || 0;
     const making = parseFloat(item.makingCharges) || 0;
-    const wastage = parseFloat(item.wastage) || 0;
+    const wastage = parseFloat(item.wastage) || 0; // Now treated as amount in ₹
     const tax = parseFloat(item.taxAmount) || 0;
+    const interestAmount = parseFloat(interest) || 0; // Interest amount from props
     
     const baseAmount = weight * rate;
-    const wastageAmount = (baseAmount * wastage) / 100;
-    const total = baseAmount + wastageAmount + making + tax;
+    const total = baseAmount + wastage + making + tax + interestAmount;
     
     return total.toFixed(2);
   };
@@ -342,20 +343,19 @@ const MetalItemsManager = ({
                 />
               </div>
 
-              {/* Wastage % */}
+              {/* Wastage Amount */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Wastage (%)
+                  Wastage Amount (₹)
                 </label>
                 <input
                   type="number"
-                  step="0.1"
+                  step="0.01"
                   min="0"
-                  max="100"
                   value={item.wastage}
                   onChange={(e) => updateItem(item.id, 'wastage', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.0"
+                  placeholder="0.00"
                   disabled={loading}
                 />
               </div>
@@ -466,13 +466,16 @@ const MetalItemsManager = ({
                 <div className="text-xs text-gray-500 space-y-1">
                   <div>Base: {item.weight}g × ₹{item.ratePerGram}/g = ₹{((parseFloat(item.weight) || 0) * (parseFloat(item.ratePerGram) || 0)).toFixed(2)}</div>
                   {parseFloat(item.wastage || 0) > 0 && (
-                    <div>Wastage ({item.wastage}%): +₹{(((parseFloat(item.weight) || 0) * (parseFloat(item.ratePerGram) || 0) * (parseFloat(item.wastage) || 0)) / 100).toFixed(2)}</div>
+                    <div>Wastage Amount: +₹{parseFloat(item.wastage || 0).toFixed(2)}</div>
                   )}
                   {parseFloat(item.makingCharges || 0) > 0 && (
                     <div>Making Charges: +₹{parseFloat(item.makingCharges || 0).toFixed(2)}</div>
                   )}
                   {parseFloat(item.taxAmount || 0) > 0 && (
                     <div>Tax: +₹{parseFloat(item.taxAmount || 0).toFixed(2)}</div>
+                  )}
+                  {parseFloat(interest || 0) > 0 && (
+                    <div>Interest: +₹{parseFloat(interest || 0).toFixed(2)}</div>
                   )}
                 </div>
                 <div className="text-sm font-bold text-gray-800 mt-2 pt-2 border-t border-gray-200">

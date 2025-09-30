@@ -4,6 +4,7 @@ import ApiService from '../../services/api';
 import MetalPriceService from '../../services/metalPriceService';
 import CustomerSearch from '../CustomerSearch';
 import MetalItemsManager from '../MetalItemsManager';
+
 import CreateCustomerForm from '../CreateCustomerForm';
 
 const GoldTransactionForm = ({ 
@@ -218,7 +219,7 @@ const GoldTransactionForm = ({
       const tax = parseFloat(item.taxAmount) || 0;
 
       const baseAmount = weight * rate;
-      const wastageAmount = (baseAmount * wastage) / 100;
+      const wastageAmount =  wastage;
       const itemTotal = baseAmount + wastageAmount + making + tax;
 
       return total + itemTotal;

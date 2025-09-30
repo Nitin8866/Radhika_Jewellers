@@ -29,8 +29,7 @@ const goldTransactionItemSchema = new mongoose.Schema({
   wastage: { 
     type: Number, 
     default: 0,
-    min: 0,
-    max: 100
+    
   },
   taxAmount: { 
     type: Number, 
@@ -54,7 +53,7 @@ const goldTransactionItemSchema = new mongoose.Schema({
 // Calculate total amount for individual item
 goldTransactionItemSchema.methods.calculateItemTotal = function() {
   const baseAmount = this.weight * this.ratePerGram;
-  const wastageAmount = (baseAmount * this.wastage) / 100;
+  const wastageAmount = this.wastag;
   const subtotal = baseAmount + wastageAmount + this.makingCharges;
   const total = subtotal + this.taxAmount;
   return Math.round(total);

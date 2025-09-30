@@ -218,7 +218,7 @@ const SilverTransactionForm = ({
       const tax = parseFloat(item.taxAmount) || 0;
 
       const baseAmount = weight * rate;
-      const wastageAmount = (baseAmount * wastage) / 100;
+      const wastageAmount =  wastage;
       const itemTotal = baseAmount + wastageAmount + making + tax;
 
       return total + itemTotal;

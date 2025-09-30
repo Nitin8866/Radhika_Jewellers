@@ -298,7 +298,7 @@ export const updateSilverTransaction = async (req, res) => {
     // Recalculate amounts if silver details are updated
     if (updates.silverDetails) {
       const baseAmount = updates.silverDetails.weight * updates.silverDetails.ratePerGram;
-      const wastageAmount = (baseAmount * (updates.silverDetails.wastage || 0)) ;
+      const wastageAmount = updates.silverDetails.wastage || 0;
       const totalAmount = baseAmount + wastageAmount + (updates.silverDetails.makingCharges || 0) + (updates.silverDetails.taxAmount || 0);
       
       updates.totalAmount = Math.round(totalAmount);
