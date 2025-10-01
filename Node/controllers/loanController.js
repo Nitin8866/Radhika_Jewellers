@@ -95,7 +95,7 @@ export const takeLoan = async (req, res) => {
       data: {
         ...savedLoan.toObject(),
         principalRupees: principalPaise ,
-        outstandingRupees: principalPaise ,
+        outstandingRupees: savedLoan.getCurrentOutstanding() ,
         transactionId: savedTransaction._id
       }
     });
@@ -136,10 +136,6 @@ export const giveLoan = async (req, res) => {
       });
     }
 
-    // Calculate first day's interest (assuming monthly rate, divide by 30 for daily)
-    const firstDayInterestPaise = Math.round((principalPaise * (interestRateMonthlyPct / 100)) / 30);
-    const initialOutstanding = principalPaise + firstDayInterestPaise;
-
     const loan = new Loan({
       customer,
       loanType: 'GIVEN',
@@ -147,7 +143,7 @@ export const giveLoan = async (req, res) => {
       direction: -1,
       sourceType: 'LOAN',
       note,
-      outstandingPrincipal: initialOutstanding,
+      outstandingPrincipal: principalPaise,
       totalInstallments,
       interestRateMonthlyPct,
       dueDate: dueDate ? new Date(dueDate) : null,
@@ -167,7 +163,7 @@ export const giveLoan = async (req, res) => {
       customer,
       amount: principalPaise,
       direction: -1,
-      description: `Loan given to ${customerName} - ${note || 'No note'} (First day interest: ₹${(firstDayInterestPaise/100).toFixed(2)})`,
+      description: `Loan given to ${customerName} - ${note || 'No note'}`,
       relatedDoc: savedLoan._id,
       relatedModel: 'Loan',
       category: 'EXPENSE',
@@ -176,7 +172,6 @@ export const giveLoan = async (req, res) => {
         paymentType: 'DISBURSEMENT',
         paymentMethod,
         originalLoanAmount: principalPaise,
-        firstDayInterest: firstDayInterestPaise,
         interestRate: interestRateMonthlyPct,
         totalInstallments
       }
@@ -191,8 +186,7 @@ export const giveLoan = async (req, res) => {
       data: {
         ...savedLoan.toObject(),
         principalRupees: principalPaise ,
-        outstandingRupees: initialOutstanding ,
-        firstDayInterestRupees: firstDayInterestPaise ,
+        outstandingRupees: savedLoan.getCurrentOutstanding() ,
         transactionId: savedTransaction._id
       }
     });
@@ -250,16 +244,22 @@ export const receiveLoanPayment = async (req, res) => {
 
     const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
 
+    // Calculate remaining principal as of payment date (before this payment)
+    const prevPrincipalPayments = loan.paymentHistory
+      .filter(p => p.principalAmount > 0 && new Date(p.date) < paymentDateObj)
+      .reduce((sum, p) => sum + p.principalAmount, 0);
+    const remainingPrincipalAsOfPayment = Math.max(0, loan.principalPaise - prevPrincipalPayments);
+
+    if (principalPaise > remainingPrincipalAsOfPayment) {
+      return res.status(400).json({
+        success: false,
+        error: `Principal payment ₹${(principalPaise/100).toFixed(0)} exceeds remaining principal as of payment date ₹${(remainingPrincipalAsOfPayment/100).toFixed(0)}`
+      });
+    }
+
     const currentDue = loan.getCurrentOutstanding(paymentDateObj);
 
     const accruedInterest = loan.getAccruedInterest(paymentDateObj);
-
-    if (principalPaise > loan.outstandingPrincipal) {
-      return res.status(400).json({
-        success: false,
-        error: `Principal payment ₹${(principalPaise/100).toFixed(0)} exceeds remaining principal ₹${(loan.outstandingPrincipal/100).toFixed(0)}`
-      });
-    }
 
     const customerName = await getCustomerName(loan.customer._id);
 
@@ -434,16 +434,22 @@ export const makeLoanPayment = async (req, res) => {
 
     const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
 
+    // Calculate remaining principal as of payment date (before this payment)
+    const prevPrincipalPayments = loan.paymentHistory
+      .filter(p => p.principalAmount > 0 && new Date(p.date) < paymentDateObj)
+      .reduce((sum, p) => sum + p.principalAmount, 0);
+    const remainingPrincipalAsOfPayment = Math.max(0, loan.principalPaise - prevPrincipalPayments);
+
+    if (principalPaise > remainingPrincipalAsOfPayment) {
+      return res.status(400).json({
+        success: false,
+        error: `Principal payment ₹${(principalPaise/100).toFixed(0)} exceeds remaining principal as of payment date ₹${(remainingPrincipalAsOfPayment/100).toFixed(0)}`
+      });
+    }
+
     const currentDue = loan.getCurrentOutstanding(paymentDateObj);
 
     const accruedInterest = loan.getAccruedInterest(paymentDateObj);
-
-    if (principalPaise > loan.outstandingPrincipal) {
-      return res.status(400).json({
-        success: false,
-        error: `Principal payment ₹${(principalPaise/100).toFixed(0)} exceeds remaining principal ₹${(loan.outstandingPrincipal/100).toFixed(0)}`
-      });
-    }
 
     const customerName = await getCustomerName(loan.customer._id);
 

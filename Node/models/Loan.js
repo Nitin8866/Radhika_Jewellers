@@ -186,7 +186,7 @@ loanSchema.virtual('principalRupees').get(function() {
 });
 
 loanSchema.virtual('outstandingRupees').get(function() {
-  return this.outstandingPrincipal ;
+  return this.getCurrentOutstanding();
 });
 
 // Virtual for payment completion percentage
@@ -257,8 +257,18 @@ loanSchema.methods.getAccruedInterest = function (asOfDate = new Date()) {
 
 // Method to get current outstanding including accrued interest
 loanSchema.methods.getCurrentOutstanding = function (asOfDate = new Date()) {
-  const accruedInterest = this.getAccruedInterest(asOfDate);
-  return this.outstandingPrincipal + accruedInterest - this.totalInterestPaid;
+  const principalPaymentsSum = this.paymentHistory
+    .filter(payment => payment.principalAmount > 0 && new Date(payment.date) <= asOfDate)
+    .reduce((sum, payment) => sum + payment.principalAmount, 0);
+  const remainingPrincipal = Math.max(0, this.principalPaise - principalPaymentsSum);
+
+  const interestPaymentsSum = this.paymentHistory
+    .filter(payment => payment.interestAmount > 0 && new Date(payment.date) <= asOfDate)
+    .reduce((sum, payment) => sum + payment.interestAmount, 0);
+
+  const accruedInterest = this.calculateDailyInterest(asOfDate);
+
+  return Math.max(0, remainingPrincipal + accruedInterest - interestPaymentsSum);
 };
 
 // Instance method to update next interest due date
@@ -328,39 +338,59 @@ loanSchema.methods.getInterestPaymentStatus = function() {
 
 // Method to add payment to history
 loanSchema.methods.addPayment = function(paymentData) {
-  const accruedInterest = this.getAccruedInterest(paymentData.date || new Date());
-  const outstandingBefore = this.outstandingPrincipal + accruedInterest - this.totalInterestPaid;
+  const paymentDate = new Date(paymentData.date || new Date());
+
+  // Calculate before this payment
+  const prevPrincipalPayments = this.paymentHistory
+    .filter(p => p.principalAmount > 0 && new Date(p.date) < paymentDate)
+    .reduce((sum, p) => sum + p.principalAmount, 0);
+  const remainingPrincipalBefore = Math.max(0, this.principalPaise - prevPrincipalPayments);
+
+  const prevInterestPayments = this.paymentHistory
+    .filter(p => p.interestAmount > 0 && new Date(p.date) < paymentDate)
+    .reduce((sum, p) => sum + p.interestAmount, 0);
+
+  const accruedInterest = this.calculateDailyInterest(paymentDate);
+
+  const outstandingBefore = remainingPrincipalBefore + accruedInterest - prevInterestPayments;
+
+  const principalPayment = paymentData.principalAmount || 0;
+  const interestPayment = paymentData.interestAmount || 0;
+  const totalPayment = principalPayment + interestPayment;
+
+  const remainingPrincipalAfter = Math.max(0, remainingPrincipalBefore - principalPayment);
+  const interestPaidAfter = prevInterestPayments + interestPayment;
+  const outstandingAfter = Math.max(0, remainingPrincipalAfter + accruedInterest - interestPaidAfter);
 
   const paymentEntry = {
-    principalAmount: paymentData.principalAmount || 0,
-    interestAmount: paymentData.interestAmount || 0,
-    date: paymentData.date || new Date(),
+    principalAmount: principalPayment,
+    interestAmount: interestPayment,
+    date: paymentDate,
     installmentNumber: paymentData.installmentNumber || (this.paymentHistory.length + 1),
     note: paymentData.note || '',
     paymentMethod: paymentData.paymentMethod || 'CASH',
     paymentReference: paymentData.paymentReference || '',
     bankTransactionId: paymentData.bankTransactionId || '',
     outstandingBefore,
-    outstandingAfter: Math.max(0, outstandingBefore - (paymentData.principalAmount + paymentData.interestAmount))
+    outstandingAfter
   };
 
   this.paymentHistory.push(paymentEntry);
 
   // Update loan amounts
-  if (paymentData.principalAmount) {
-    this.outstandingPrincipal = Math.max(0, this.outstandingPrincipal - paymentData.principalAmount);
-    this.totalPrincipalPaid += paymentData.principalAmount;
-    this.lastPrincipalPaymentDate = paymentEntry.date;
+  if (principalPayment > 0) {
+    this.totalPrincipalPaid += principalPayment;
+    this.lastPrincipalPaymentDate = paymentDate;
   }
-  if (paymentData.interestAmount) {
-    this.totalInterestPaid += paymentData.interestAmount;
-    this.lastInterestPaymentDate = paymentEntry.date;
+  if (interestPayment > 0) {
+    this.totalInterestPaid += interestPayment;
+    this.lastInterestPaymentDate = paymentDate;
   }
 
   this.paidInstallments = this.paymentHistory.length;
   
   // Update status
-  const isFullyPaid = this.outstandingPrincipal <= 0 && this.getPendingInterestAmount() <= 0;
+  const isFullyPaid = this.getCurrentOutstanding() <= 0;
   this.status = isFullyPaid ? 'CLOSED' : (this.totalPrincipalPaid > 0 || this.totalInterestPaid > 0 ? 'PARTIALLY_PAID' : 'ACTIVE');
   this.isActive = !isFullyPaid;
 
@@ -395,7 +425,7 @@ loanSchema.pre('save', function(next) {
     this.outstandingPrincipal = calculatedOutstanding;
   }
 
-  const isFullyPaid = this.outstandingPrincipal <= 0 && this.getPendingInterestAmount() <= 0;
+  const isFullyPaid = this.getCurrentOutstanding() <= 0;
   if (isFullyPaid && this.status !== 'CLOSED') {
     this.status = 'CLOSED';
     this.isActive = false;
